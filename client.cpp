@@ -30,11 +30,11 @@ int main() {
     }
 
     // // Connect to the server
-    // if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
-    //     perror("Connection Failed");
-    //     close(sockfd);
-    //     exit(EXIT_FAILURE);
-    // }
+    if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+        perror("Connection Failed");
+        close(sockfd);
+        exit(EXIT_FAILURE);
+    }
 
     // Send the message to the server
     if (send(sockfd, message, strlen(message), 0))
