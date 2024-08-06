@@ -1,7 +1,7 @@
 NAME = webserv
 
-# SRC = $(wildcard *.cpp)
-SRC = main.cpp
+SRC = $(wildcard *.cpp)
+# SRC = main.cpp
 
 HDRS = $(wildcard *.hpp)
 
