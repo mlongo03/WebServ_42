@@ -1,15 +1,13 @@
 NAME = webserv
 
-SRC = $(wildcard *.cpp)
-# SRC = main.cpp
+SRC = $(wildcard srcs/*.cpp)
 
-HDRS = $(wildcard *.hpp)
+HDRS = $(wildcard includes/*.hpp)
 
-OBJS = $(SRC:.cpp=.o)
+OBJS = $(SRC:srcs/%.cpp=obj/%.o)
 
-FLAGS := -Wall -Werror -Wextra -std=c++98
+FLAGS := -Wall -Werror -Wextra -std=c++98 -I includes
 
-#COLORS
 RED = \033[1;31m
 
 GREEN = \033[1;32m
@@ -20,7 +18,7 @@ DEFAULT = \033[0m
 
 all: $(NAME)
 
-%.o : %.cpp
+obj/%.o: srcs/%.cpp
 	@(c++ $(FLAGS) -c $< -o $@)
 
 $(NAME): $(OBJS) $(HDRS)

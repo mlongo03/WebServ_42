@@ -1,13 +1,14 @@
 #include <stdio.h>
+#include <iostream>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
 
-#define PORT 3490
+#define PORT 3030
 #define SERVER_IP "127.0.0.1"
 
-int main() {
+int main(int argc, char **argv) {
     int sockfd;
     struct sockaddr_in server_addr;
     const char *message = "Hello from client!";
@@ -19,8 +20,9 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
+    printf("port : %d\n", std::atoi(argv[1]));
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(PORT);
+    server_addr.sin_port = htons(std::atoi(argv[1]));
 
     // Convert IPv4 and IPv6 addresses from text to binary form
     if (inet_pton(AF_INET, SERVER_IP, &server_addr.sin_addr) <= 0) {
