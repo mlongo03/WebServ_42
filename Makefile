@@ -6,6 +6,8 @@ HDRS = $(wildcard includes/*.hpp)
 
 OBJS = $(SRC:srcs/%.cpp=obj/%.o)
 
+OBJDIR = obj
+
 FLAGS := -Wall -Werror -Wextra -std=c++98 -I includes
 
 RED = \033[1;31m
@@ -19,6 +21,7 @@ DEFAULT = \033[0m
 all: $(NAME)
 
 obj/%.o: srcs/%.cpp
+	@mkdir -p $(@D)
 	@(c++ $(FLAGS) -c $< -o $@)
 
 $(NAME): $(OBJS) $(HDRS)
