@@ -17,6 +17,7 @@ private:
     void createSocket(const Server& server);
     void handleNewConnection(int listeningSocket);
     void handleClientData(int clientSocket);
+    void closeSockets();
 
     std::vector<int> listeningSockets;
     Epoll epollHandler;

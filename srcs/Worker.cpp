@@ -23,21 +23,38 @@ Worker::~Worker() {
     }
 }
 
-void Worker::run() {
+void	Worker::closeSockets()
+{
+    for (size_t i = 0; i < listeningSockets.size(); i++) {
+        close(listeningSockets[i]);
+    }
+}
 
+void Worker::run()
+{
     if (listeningSockets.size() == 0)
         return ;
 
     while (true) {
-        std::vector<struct epoll_event> events = epollHandler.waitForEvents();
+        try
+        {
+            std::vector<struct epoll_event> events = epollHandler.waitForEvents();
 
-        for (size_t i = 0; i < events.size(); i++) {
-            if (std::find(listeningSockets.begin(), listeningSockets.end(), events[i].data.fd) != listeningSockets.end()) {
-                handleNewConnection(events[i].data.fd);
-            } else {
-                handleClientData(events[i].data.fd);
+            for (size_t i = 0; i < events.size(); i++) {
+                if (std::find(listeningSockets.begin(), listeningSockets.end(), events[i].data.fd) != listeningSockets.end()) {
+                    handleNewConnection(events[i].data.fd);
+                } else {
+                    handleClientData(events[i].data.fd);
+                }
             }
         }
+        catch(const std::exception& e)
+        {
+			std::cerr << e.what() << std::endl;
+			closeSockets();
+			return ;
+        }
+
     }
 }
 
@@ -101,7 +118,7 @@ void Worker::handleNewConnection(int listeningSocket) {
     }
 
     epollHandler.addFd(clientSocket, EPOLLIN);
-    std::cout << "Accepted new connection on socket " << clientSocket << std::endl;
+    std::cout << "Accepted new connection on socket " << listeningSocket << ", created tcp connection with fd " << clientSocket << std::endl;
 }
 
 void Worker::handleClientData(int clientSocket) {
@@ -109,8 +126,8 @@ void Worker::handleClientData(int clientSocket) {
     int bytesRead = read(clientSocket, buffer, sizeof buffer);
 
     if (bytesRead <= 0) {
-        close(clientSocket);
         epollHandler.removeFd(clientSocket);
+        close(clientSocket);
         std::cout << "Connection closed on socket " << clientSocket << std::endl;
     } else {
         // Handle HTTP request and send response

@@ -7,15 +7,14 @@
 class SignalHandler {
 public:
     static SignalHandler& getInstance();
-
     void setupSignalHandlers(const std::vector<int>& sockets, Worker *worker);
+    static void signalHandler(int signum);
 
 private:
     SignalHandler();  // Private constructor
     ~SignalHandler();
     SignalHandler(const SignalHandler&);  // Copy constructor
     SignalHandler& operator=(const SignalHandler&);  // Assignment operator
-    static void signalHandler(int signum);
 
     std::vector<int> sockets;
     Worker *worker;
