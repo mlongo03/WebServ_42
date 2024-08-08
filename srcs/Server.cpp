@@ -3,7 +3,7 @@
 
 Server::Server() :
 	host("0.0.0.0"),
-	listen("80"),
+	listen("8080"),
 	index("index.html") // default index if no index is specified in the location block
 {}
 
@@ -102,3 +102,19 @@ void Server::printAllServers(std::vector<Server>& servers) {
     }
 }
 
+std::ostream& operator<<(std::ostream& os, const Server& server) {
+	os << "Server names: ";
+	for (std::vector<std::string>::const_iterator it = server.server_names.begin(); it != server.server_names.end(); ++it) {
+		os << "|" << *it << "|";
+	}
+	os << "\n";
+	os << "  host: |" << server.host << "|" << "\n";
+	os << "  Listen: |" << server.listen << "|" <<  "\n";
+
+
+	for (std::vector<Location>::const_iterator it = server.locations.begin(); it != server.locations.end(); ++it) {
+		os << *it << ' ';
+	}
+
+	return os;
+}

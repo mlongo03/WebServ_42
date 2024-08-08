@@ -58,3 +58,12 @@ void Location::print() const
 	// if (!autoindex.empty()) std::cout << "    autoindex: " << autoindex << std::endl;
 	// if (!root.empty()) std::cout << "    root: " << root << std::endl;
 }
+
+std::ostream &operator<<(std::ostream &os, const Location &location)
+{
+	os << "    Location: " << location.path << std::endl;
+	os << "      index: " << location.index << std::endl;
+	// os << "autoindex: " << location.autoindex << std::endl;
+	// os << "root: " << location.root << std::endl;
+	return os;
+}

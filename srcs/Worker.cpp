@@ -86,7 +86,8 @@ void Worker::createSocket(const Server& server) {
     listeningSockets.push_back(sockfd);
     epollHandler.addFd(sockfd, EPOLLIN);
 
-	server.print();
+	// server.print();
+	std::cout << server << std::endl;
 }
 
 void Worker::handleNewConnection(int listeningSocket) {

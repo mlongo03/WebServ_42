@@ -38,6 +38,8 @@ public:
 	void setIndex(const std::string& index);
 	void print() const;
 	void printAllServers(std::vector<Server>& servers);
+
 };
+	std::ostream& operator<<(std::ostream& os, const Server& server);
 
 #endif
