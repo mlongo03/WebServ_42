@@ -13,29 +13,50 @@ Worker::Worker(const std::vector<Server>& servers) {
 			std::cerr << e.what() << '\n';
 		}
     }
-    SignalHandler::getInstance().setupSignalHandlers(listeningSockets);
+    SignalHandler::getInstance().setupSignalHandlers(listeningSockets, this);
 }
 
 Worker::~Worker() {
+    // std::cout << "destroying woker class" << std::endl;
     for (size_t i = 0; i < listeningSockets.size(); i++) {
         close(listeningSockets[i]);
     }
 }
 
-void Worker::run() {
+void	Worker::closeSockets()
+{
+    for (size_t i = 0; i < listeningSockets.size(); i++) {
+        close(listeningSockets[i]);
+    }
+}
 
+void Worker::run()
+{
     if (listeningSockets.size() == 0)
         return ;
-
     while (true) {
-        std::vector<struct epoll_event> events = epollHandler.waitForEvents();
+        try
+        {
+            std::vector<struct epoll_event> events = epollHandler.waitForEvents();
+            for (size_t i = 0; i < events.size(); i++) {
 
-        for (size_t i = 0; i < events.size(); i++) {
-            if (std::find(listeningSockets.begin(), listeningSockets.end(), events[i].data.fd) != listeningSockets.end()) {
-                handleNewConnection(events[i].data.fd);
-            } else {
-                handleClientData(events[i].data.fd);
+                if (events[i].events & EPOLLIN) {
+                    if (std::find(listeningSockets.begin(), listeningSockets.end(), events[i].data.fd) != listeningSockets.end()) {
+                        handleNewConnection(events[i].data.fd);
+                    } else {
+                        handleClientData(events[i].data.fd);
+                    }
+                }
+                if (events[i].events & EPOLLOUT) {
+                    handleWritableData(events[i].data.fd);
+                }
             }
+        }
+        catch(const std::exception& e)
+        {
+			std::cerr << e.what() << std::endl;
+			closeSockets();
+			return ;
         }
     }
 }
@@ -84,7 +105,7 @@ void Worker::createSocket(const Server& server) {
     }
 
     listeningSockets.push_back(sockfd);
-    epollHandler.addFd(sockfd, EPOLLIN);
+    epollHandler.addFd(sockfd, EPOLLIN | EPOLLOUT);
 
 	// server.print();
 	std::cout << server << std::endl;
@@ -101,7 +122,7 @@ void Worker::handleNewConnection(int listeningSocket) {
     }
 
     epollHandler.addFd(clientSocket, EPOLLIN);
-    std::cout << "Accepted new connection on socket " << clientSocket << std::endl;
+    std::cout << "Accepted new connection on socket " << listeningSocket << ", created tcp connection with fd " << clientSocket << std::endl;
 }
 
 void Worker::handleClientData(int clientSocket) {
@@ -109,11 +130,21 @@ void Worker::handleClientData(int clientSocket) {
     int bytesRead = read(clientSocket, buffer, sizeof buffer);
 
     if (bytesRead <= 0) {
-        close(clientSocket);
         epollHandler.removeFd(clientSocket);
+        close(clientSocket);
         std::cout << "Connection closed on socket " << clientSocket << std::endl;
     } else {
         // Handle HTTP request and send response
     }
+}
+
+void Worker::handleWritableData(int clientSocket) {
+    (void)clientSocket;
+    // Implement how you want to handle writable events
+    // For example, you might have a buffer to write data to the socket
+}
+
+std::vector<int> Worker::getSockets() const {
+    return this->listeningSockets;
 }
 

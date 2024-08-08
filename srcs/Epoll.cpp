@@ -37,7 +37,8 @@ void Epoll::modifyFd(int fd, uint32_t events) {
 
 void Epoll::removeFd(int fd) {
     if (epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, NULL) == -1) {
-        throw std::runtime_error("epoll_ctl del error");
+        std::cerr << "Failed to remove fd " << fd << " from epoll: " << strerror(errno) << std::endl;
+        throw std::runtime_error("");
     }
 }
 

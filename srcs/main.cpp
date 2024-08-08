@@ -6,7 +6,6 @@
 
 int main(int argc, char **argv)
 {
-
 	if (argc != 2)
 	{
 		std::cerr << "Usage: " << argv[0] << " <config_file>" << std::endl;
@@ -17,8 +16,7 @@ int main(int argc, char **argv)
 		try
 		{
 			ConfigParser configParser;
-			std::vector<Server> servers = configParser.parseConfig(argv[1]);
-			Worker worker = Worker(servers);
+			Worker worker = Worker(configParser.parseConfig(argv[1]));
 			worker.run();
 		}
 		catch (std::exception &e)
