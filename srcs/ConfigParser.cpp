@@ -5,62 +5,17 @@ ConfigParser::ConfigParser() {}
 
 ConfigParser::~ConfigParser() {}
 
-ConfigParser::ConfigParser(const ConfigParser &configParser)
+ConfigParser::ConfigParser(const ConfigParser &src)
 {
-	(void)configParser;
+	*this = src;
 }
 
-ConfigParser &ConfigParser::operator=(const ConfigParser &configParser)
+
+ConfigParser &ConfigParser::operator=(const ConfigParser &rhs)
 {
-	(void)configParser;
+	(void)rhs;
 	return *this;
 }
-
-// ConfigParser::ConfigParser(const char *filepath) : filepath(filepath) {}
-
-// std::string ConfigParser::readFile(const char *filepath)
-// {
-// 	int fd = open(filepath, O_RDONLY);
-// 	if (fd == -1)
-// 	{
-// 		std::cerr << "Errore nell'apertura del file: " << strerror(errno) << std::endl;
-// 		exit(EXIT_FAILURE);
-// 	}
-
-// 	struct stat statbuf;
-// 	if (stat(filepath, &statbuf) == -1)
-// 	{
-// 		std::cerr << "Errore nella chiamata stat: " << strerror(errno) << std::endl;
-// 		close(fd);
-// 		exit(EXIT_FAILURE);
-// 	}
-
-// 	char *buffer = new char[statbuf.st_size + 1];
-// 	if (!buffer)
-// 	{
-// 		std::cerr << "Errore nell'allocazione della memoria" << std::endl;
-// 		close(fd);
-// 		exit(EXIT_FAILURE);
-// 	}
-
-// 	ssize_t bytesRead = read(fd, buffer, statbuf.st_size);
-// 	if (bytesRead == -1)
-// 	{
-// 		std::cerr << "Errore nella lettura del file: " << strerror(errno) << std::endl;
-// 		delete[] buffer;
-// 		close(fd);
-// 		exit(EXIT_FAILURE);
-// 	}
-
-// 	buffer[bytesRead] = '\0';
-
-// 	close(fd);
-
-// 	std::string fileContent(buffer);
-// 	delete[] buffer;
-
-// 	return fileContent;
-// }
 
 void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool inLocationBlock, Server &currentServer, Location &currentLocation)
 {
@@ -69,7 +24,8 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 	{
 		return;
 	}
-	size_t spacePos = line.find(' ');
+	// size_t spacePos = line.find(' '); // here i search for a space after a directive
+	size_t spacePos = line.find_first_of(" \t\n\r\f\v"); // now changed to all kind of spaces
 	if (spacePos == std::string::npos)
 	{
 		throw std::runtime_error("Invalid line format");
@@ -77,17 +33,6 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 
 	std::string key = line.substr(0, spacePos);
 	std::string value = line.substr(spacePos + 1);
-
-	// std::cout << " line is " << line << std::endl;
-	// std::cout << "key: |" << key << "| value: |" << value << "|value back: |" << value.back() << "|"<< std::endl;
-	// // Check if the line is the start of a location block
-	// if (key == "location" && value.back() == '{')
-	// {
-	// 	std::cout << "entered location block" << std::endl;
-	// 	inLocationBlock = true;
-	// 	currentLocation.setIndex(value.substr(0, value.size() - 2)); // Remove the trailing space and {
-	// 	return;
-	// }
 
 	// trow error if value is empty
 	if (value == ";")
@@ -128,21 +73,21 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 		}
 		else if (key == "root")
 		{
+			value = trim(value);
 			currentServer.setRoot(value);
 		}
 		else if (key == "host")
 		{
+			value = trim(value);
 			currentServer.setHost(value);
 		}
 		else if (key == "index")
 		{
+			value = trim(value);
 			currentServer.setIndex(value);
 		}
-
 		else
-		{
 			throw std::runtime_error("Unknown key in server block: " + key);
-		}
 	}
 	else if (inLocationBlock)
 	{
@@ -157,45 +102,28 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 			std::string token;
 			while (iss >> token)
 			{
-				// // Remove all kinds of spaces
-				// token.erase(0, token.find_first_not_of(" \t\n\r\f\v"));
-				// token.erase(token.find_last_not_of(" \t\n\r\f\v") + 1);
-
 				if (isValidHttpMethod(token))
-				{
-				// std::cout << "token is " << token << std::endl;
-				allows.push_back(token);
-				}
+					allows.push_back(token);
 				else
 					throw std::runtime_error("Invalid HTTP method: " + token);
 			}
 			currentLocation.setAllow(allows);
 		}
-		// else if (key == "allow")
-		// {
-		// 	std::cout << "entered allow" << std::endl;
-		// 	// std::cout << "entered allow" << std::endl;
-		// 	std::vector<std::string> allows;
-		// 	std::istringstream iss(value);
-		// 	std::string token;
-		// 	while (std::getline(iss, token, ','))
-		// 	{
-		// 		// Remove all kinds of spaces
-		// 		token.erase(0, token.find_first_not_of(" \t\n\r\f\v"));
-		// 		token.erase(token.find_last_not_of(" \t\n\r\f\v") + 1);
-
-		// 		if (isValidHttpMethod(token))
-		// 		{
-		// 			std::cout << "token is " << token << std::endl;
-		// 			allows.push_back(token);
-		// 			currentLocation.setAllow(allows);
-
-		// 			std::cout << currentLocation.getAllow().size() << std::endl;
-		// 		}
-		// 		else
-		// 			throw std::runtime_error("Invalid HTTP method: " + token);
-		// 	}
-		// }
+		else if (key == "autoindex")
+		{
+			value = trim(value);
+			if (value == "on")
+				currentLocation.setAutoindex(true);
+			else if (value == "off")
+				currentLocation.setAutoindex(false);
+			else
+				throw std::runtime_error("Invalid value for autoindex: " + value);
+		}
+		else if (key == "root")
+		{
+			value = trim(value);
+			currentLocation.setRoot(value);
+		}
 		else
 		{
 			throw std::runtime_error("Unknown key in location block: " + key);
@@ -240,12 +168,24 @@ std::vector<Server> ConfigParser::parseServers(const std::vector<std::string> &l
 			else if (line.substr(0, 9) == "location ") // Check if the line starts a location block
 			{
 				inLocationBlock = true;
-				currentLocation = Location(); // Create a new Location object
+				currentLocation = Location();
 
-				size_t spacePos = line.find(' ');
-				std::string value = line.substr(spacePos + 1, line.size() - spacePos - 3); // Get the value
-				// std::cout << "value is " << value << std::endl;
-				currentLocation.setPath(value); // Set the path of the location
+				// size_t spacePos = line.find(' ');
+				size_t spacePos = line.find_first_of(" \t\n\r\f\v"); //changed to all kind of spaces
+				std::string value = line.substr(spacePos + 1, line.size() - spacePos - 2); // Get the value
+				value = trim(value);
+
+				// todo check better this condition
+				if (value.empty())
+				{
+					throw std::runtime_error("Invalid location path");
+				}
+				else if (value[0] != '/')
+				{
+					throw std::runtime_error("Location path must start with /");
+				}
+				else
+					currentLocation.setPath(value); // Set the path of the location
 			}
 			else if (line == "}")
 			{
@@ -280,7 +220,6 @@ std::vector<Server> ConfigParser::parseServers(const std::vector<std::string> &l
 			inLocationBlock = false;
 		}
 	}
-
 	return servers;
 }
 
@@ -301,133 +240,3 @@ std::vector<Server> ConfigParser::parseConfig(const std::string &filename)
 
 	return parseServers(lines);
 }
-
-// void ConfigParser::parseConfig(const std::string &content, std::vector<Server> &servers)
-// {
-// 	std::vector<std::string> lines;
-// 	std::string line;
-// 	size_t pos = 0, found;
-
-// 	while ((found = content.find_first_of('\n', pos)) != std::string::npos)
-// 	{
-// 		lines.push_back(content.substr(pos, found - pos));
-// 		pos = found + 1;
-// 	}
-// 	lines.push_back(content.substr(pos));
-
-// 	Server currentServer;
-// 	Location currentLocation;
-// 	bool inServerBlock = false;
-// 	bool inLocationBlock = false;
-// 	for (size_t i = 0; i < lines.size(); ++i)
-// 	{
-// 		line = lines[i];
-// 		// std::cout << line << std::endl;
-// 		// Ignore comments and empty lines
-// 		if (line.empty() || line[0] == '#')
-// 		{
-// 			continue;
-// 		}
-// 		// Remove leading and trailing spaces
-// 		line.erase(0, line.find_first_not_of(" \t\n\r\f\v"));
-// 		line.erase(line.find_last_not_of(" \t\n\r\f\v") + 1);
-
-// 		if (line == "server {")
-// 		{
-// 			inServerBlock = true;
-// 			currentServer = Server();
-// 		}
-// 		else if (line == "}")
-// 		{
-// 			if (inLocationBlock)
-// 			{
-// 				currentServer.locations.push_back(currentLocation);
-// 				inLocationBlock = false;
-// 			}
-// 			else if (inServerBlock)
-// 			{
-// 				servers.push_back(currentServer);
-// 				inServerBlock = false;
-// 			}
-// 		}
-// 		else if (line.find("location") == 0 && line.find('{') != std::string::npos)
-// 		{
-// 			inLocationBlock = true;
-// 			currentLocation = Location();
-// 			size_t pathStart = line.find_first_not_of(" \t\n\r\f\v") + 1;
-// 			size_t pathEnd = line.find_last_not_of(" \t\n\r\f\v{");
-// 			currentLocation.path = line.substr(pathStart, pathEnd - pathStart);
-// 		}
-// 		else
-// 		{
-// 			size_t delimiterPos = line.find(' ');
-// 			if (delimiterPos != std::string::npos)
-// 			{
-// 				std::string directive = line.substr(0, delimiterPos);
-// 				std::string value = line.substr(delimiterPos + 1);
-// 				// Remove the semicolon at the end
-// 				if (!value.empty() && value[value.size() - 1] == ';')
-// 				{
-// 					value.erase(value.size() - 1);
-// 				}
-// 				if (inLocationBlock)
-// 				{
-// 					if (directive == "allow")
-// 					{
-// 						// std::cout << "entered allow" << std::endl;
-// 						std::istringstream iss(value);
-// 						std::string token;
-// 						while (std::getline(iss, token, ','))
-// 						{
-// 							// Remove all kinds of spaces
-// 							token.erase(0, token.find_first_not_of(" \t\n\r\f\v"));
-// 							token.erase(token.find_last_not_of(" \t\n\r\f\v") + 1);
-
-// 							if (isValidHttpMethod(token)) {
-// 								currentLocation.allow.push_back(token);
-// 							} else {
-// 								throw std::runtime_error("Invalid HTTP method: " + token);
-// 							}
-
-// 						}
-// 					}
-// 					else if (directive == "autoindex")
-// 					{
-// 						currentLocation.autoindex = value;
-// 					}
-// 					else if (directive == "root")
-// 					{
-// 						currentLocation.root = value;
-// 					}
-// 					else if (directive == "index")
-// 					{
-// 						currentLocation.index = value;
-// 					}
-// 				}
-// 				else if (inServerBlock)
-// 				{
-// 					if (directive == "server_name")
-// 					{
-// 						currentServer.server_name = value;
-// 					}
-// 					else if (directive == "host")
-// 					{
-// 						currentServer.host = value;
-// 					}
-// 					else if (directive == "index")
-// 					{
-// 						currentServer.index = value;
-// 					}
-// 					else if (directive == "listen")
-// 					{
-// 						currentServer.listen = value;
-// 					}
-// 					else if (directive == "root")
-// 					{
-// 						currentServer.root = value;
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// }

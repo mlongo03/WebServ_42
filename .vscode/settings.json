@@ -1,0 +1,6 @@
+{
+	"files.associations": {
+		"ostream": "cpp",
+		"stdexcept": "cpp"
+	}
+}
