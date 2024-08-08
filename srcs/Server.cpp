@@ -10,27 +10,26 @@ Server::Server() :
 Server::~Server()
 {}
 
-Server::Server(const Server& server) :
-	server_names(server.server_names),
-	host(server.host),
-	listen(server.listen),
-	root(server.root),
-	index(server.index),
-	locations(server.locations)
-{}
+Server::Server(const Server& src)
+{
+	*this = src;
+}
 
 
-Server& Server::operator=(const Server& server) {
-		server_names= server.server_names;
-		host = server.host;
-		listen = server.listen;
-		root = server.root;
-		index = server.index;
-		locations = server.locations;
+Server& Server::operator=(const Server& rhs)
+{
+	if (this != &rhs) {
+		server_names = rhs.server_names;
+		host = rhs.host;
+		listen = rhs.listen;
+		root = rhs.root;
+		index = rhs.index;
+		locations = rhs.locations;
+	}
 		return *this;
-	};
+};
 
-std::vector<std::string> Server::getServerNames() {
+std::vector<std::string> Server::getServerNames() const{
 	return server_names;
 }
 
@@ -50,7 +49,9 @@ std::string Server::getIndex() const {
 	return index;
 }
 
-
+std::vector<Location> Server::getLocations() const{
+	return locations;
+}
 
 void Server::setServerNames(const std::vector<std::string>& server_names) {
 	this->server_names = server_names;
@@ -103,14 +104,14 @@ void Server::printAllServers(std::vector<Server>& servers) {
 }
 
 std::ostream& operator<<(std::ostream& os, const Server& server) {
-	os << "Server names: ";
+	os << "\nServer names: ";
 	for (std::vector<std::string>::const_iterator it = server.server_names.begin(); it != server.server_names.end(); ++it) {
 		os << "|" << *it << "|";
 	}
 	os << "\n";
 	os << "  host: |" << server.host << "|" << "\n";
-	os << "  Listen: |" << server.listen << "|" <<  "\n";
-
+	os << "  listen: |" << server.listen << "|" <<  "\n";
+	os << "  root: |" << server.root << "|" << "\n";
 
 	for (std::vector<Location>::const_iterator it = server.locations.begin(); it != server.locations.end(); ++it) {
 		os << *it << ' ';

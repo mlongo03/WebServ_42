@@ -24,11 +24,8 @@ public:
 	ConfigParser(const ConfigParser &configParser);
 	ConfigParser &operator=(const ConfigParser &configParser);
 
-	// ConfigParser(const char *filepath);
-	std::string readFile(const char *filepath);
 	void parseLine(const std::string &line, bool inServerBlock, bool inLocationBlock, Server &currentServer, Location &currentLocation);
 	std::vector<Server> parseServers(const std::vector<std::string> &lines);
-	// void parseConfig(const std::string& content, std::vector<Server>& servers);
 	std::vector<Server> parseConfig(const std::string& filename);
 };
 #endif
