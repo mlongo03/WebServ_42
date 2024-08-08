@@ -9,6 +9,7 @@ class Worker {
 public:
     Worker(const std::vector<Server>& servers);
     ~Worker();
+    std::vector<int> getSockets() const;
 
     void run();
 

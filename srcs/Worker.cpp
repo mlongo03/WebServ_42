@@ -13,10 +13,11 @@ Worker::Worker(const std::vector<Server>& servers) {
 			std::cerr << e.what() << '\n';
 		}
     }
-    SignalHandler::getInstance().setupSignalHandlers(listeningSockets);
+    SignalHandler::getInstance().setupSignalHandlers(listeningSockets, this);
 }
 
 Worker::~Worker() {
+    // std::cout << "destroying woker class" << std::endl;
     for (size_t i = 0; i < listeningSockets.size(); i++) {
         close(listeningSockets[i]);
     }
@@ -114,5 +115,10 @@ void Worker::handleClientData(int clientSocket) {
     } else {
         // Handle HTTP request and send response
     }
+}
+
+
+std::vector<int> Worker::getSockets() const {
+    return this->listeningSockets;
 }
 

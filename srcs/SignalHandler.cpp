@@ -9,8 +9,9 @@ SignalHandler& SignalHandler::getInstance() {
     return instance;
 }
 
-void SignalHandler::setupSignalHandlers(const std::vector<int>& sockets) {
+void SignalHandler::setupSignalHandlers(const std::vector<int>& sockets, Worker *worker) {
     this->sockets = sockets;
+    this->worker = worker;
     signal(SIGINT, SignalHandler::signalHandler);
 }
 
@@ -21,7 +22,7 @@ void SignalHandler::signalHandler(int signum) {
         for (std::vector<int>::iterator it = handler.sockets.begin(); it != handler.sockets.end(); ++it) {
             close(*it);
         }
+        handler.worker->~Worker();
         exit(EXIT_FAILURE);
     }
 }
-
