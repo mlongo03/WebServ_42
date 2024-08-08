@@ -34,17 +34,21 @@ void Worker::run()
 {
     if (listeningSockets.size() == 0)
         return ;
-
     while (true) {
         try
         {
             std::vector<struct epoll_event> events = epollHandler.waitForEvents();
-
             for (size_t i = 0; i < events.size(); i++) {
-                if (std::find(listeningSockets.begin(), listeningSockets.end(), events[i].data.fd) != listeningSockets.end()) {
-                    handleNewConnection(events[i].data.fd);
-                } else {
-                    handleClientData(events[i].data.fd);
+
+                if (events[i].events & EPOLLIN) {
+                    if (std::find(listeningSockets.begin(), listeningSockets.end(), events[i].data.fd) != listeningSockets.end()) {
+                        handleNewConnection(events[i].data.fd);
+                    } else {
+                        handleClientData(events[i].data.fd);
+                    }
+                }
+                if (events[i].events & EPOLLOUT) {
+                    handleWritableData(events[i].data.fd);
                 }
             }
         }
@@ -54,7 +58,6 @@ void Worker::run()
 			closeSockets();
 			return ;
         }
-
     }
 }
 
@@ -102,7 +105,7 @@ void Worker::createSocket(const Server& server) {
     }
 
     listeningSockets.push_back(sockfd);
-    epollHandler.addFd(sockfd, EPOLLIN);
+    epollHandler.addFd(sockfd, EPOLLIN | EPOLLOUT);
 
 	server.print();
 }
@@ -134,6 +137,11 @@ void Worker::handleClientData(int clientSocket) {
     }
 }
 
+void Worker::handleWritableData(int clientSocket) {
+    (void)clientSocket;
+    // Implement how you want to handle writable events
+    // For example, you might have a buffer to write data to the socket
+}
 
 std::vector<int> Worker::getSockets() const {
     return this->listeningSockets;
