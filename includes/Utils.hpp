@@ -1,4 +1,3 @@
-// utils.hpp
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
@@ -18,4 +17,4 @@ void printAllServers(std::vector<Server>& servers);
 bool is_valid_port(const std::string& str);
 std::string trim(const std::string& str);
 
-#endif  // UTILS_HPP
+#endif
