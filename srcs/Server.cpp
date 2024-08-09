@@ -74,20 +74,29 @@ void Server::setIndex(const std::string& index) {
 	this->index = index;
 }
 
+void Server::addLocation(const Location& location) {
+	locations.push_back(location);
+}
+
 std::ostream& operator<<(std::ostream& os, const Server& server) {
 	os << "\nServer names: ";
-	for (std::vector<std::string>::const_iterator it = server.server_names.begin(); it != server.server_names.end(); ++it) {
+	std::vector<std::string> serverNames = server.getServerNames();
+	for (std::vector<std::string>::const_iterator it = serverNames.begin(); it != serverNames.end(); ++it) {
 		os << "|" << *it << "|";
 	}
 	os << "\n";
-	os << "  host: |" << server.host << "|" << "\n";
-	os << "  listen: |" << server.listen << "|" <<  "\n";
-	os << "  index: |" << server.index << "|" << "\n";
-	os << "  root: |" << server.root << "|" << "\n";
+	os << "  host: |" << server.getHost() << "|" << "\n";
+	os << "  listen: |" << server.getListen() << "|" <<  "\n";
+	os << "  index: |" << server.getIndex() << "|" << "\n";
+	os << "  root: |" << server.getRoot() << "|" << "\n";
 
-	for (std::vector<Location>::const_iterator it = server.locations.begin(); it != server.locations.end(); ++it) {
+
+	std::vector<Location> locations = server.getLocations();
+	for (std::vector<Location>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
 		os << *it << ' ';
 	}
 
 	return os;
 }
+
+

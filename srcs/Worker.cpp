@@ -70,7 +70,7 @@ void Worker::createSocket(const Server& server) {
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
-    if (getaddrinfo(server.host.c_str(), server.listen.c_str(), &hints, &res) != 0) {
+    if (getaddrinfo(server.getHost().c_str(), server.getListen().c_str(), &hints, &res) != 0) {
         throw std::runtime_error("getaddrinfo error");
     }
 

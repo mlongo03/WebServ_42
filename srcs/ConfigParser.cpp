@@ -165,17 +165,24 @@ std::vector<Server> ConfigParser::parseServers(const std::vector<std::string> &l
 				inServerBlock = true;
 				currentServer = Server();
 			}
-			else if (line.substr(0, 9) == "location ") // Check if the line starts a location block
+			else if (line.substr(0, 8) == "location") // Check if the line starts a location block
 			{
 				inLocationBlock = true;
 				currentLocation = Location();
 
-				// size_t spacePos = line.find(' ');
 				size_t spacePos = line.find_first_of(" \t\n\r\f\v"); //changed to all kind of spaces
-				std::string value = line.substr(spacePos + 1, line.size() - spacePos - 2); // Get the value
+				size_t openBracePos = line.find('{');
+				if (spacePos == std::string::npos)
+				{
+					throw std::runtime_error("Invalid location block no location path found");
+				}
+				if (openBracePos == std::string::npos)
+				{
+					throw std::runtime_error("Invalid location block open braces not found");
+				}
+				std::string value = line.substr(spacePos, line.size() - spacePos - 1); // Get the value
 				value = trim(value);
 
-				// todo check better this condition
 				if (value.empty())
 				{
 					throw std::runtime_error("Invalid location path");
@@ -192,8 +199,7 @@ std::vector<Server> ConfigParser::parseServers(const std::vector<std::string> &l
 
 				if (inLocationBlock)
 				{
-					// std::cout << "pushing location" << std::endl;
-					currentServer.locations.push_back(currentLocation);
+					currentServer.addLocation(currentLocation); // Add the location to the server
 					inLocationBlock = false;
 				}
 				else if (inServerBlock)

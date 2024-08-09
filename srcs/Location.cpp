@@ -79,19 +79,19 @@ void Location::setRoot(const std::string &root)
 
 std::ostream &operator<<(std::ostream &os, const Location &location)
 {
-	os << "    Location: |" << location.path << "|" << std::endl;
-	os << "      index: |" << location.index << "|" << std::endl;
-	os << "      autoindex: |" << location.autoindex << "|" << std::endl;
-	if (!location.allow.empty())
+	os << "    Location: |" << location.getPath() << "|" << std::endl;
+	os << "      index: |" << location.getIndex() << "|" << std::endl;
+	os << "      autoindex: |" << location.getAutoindex() << "|" << std::endl;
+	if (!location.getAllow().empty())
 	{
 		os << "      allow: ";
-		for (std::vector<std::string>::const_iterator it = location.allow.begin(); it != location.allow.end(); ++it)
-		{
+		std::vector<std::string> allow = location.getAllow();
+		for (std::vector<std::string>::const_iterator it = allow.begin(); it != allow.end(); ++it) {
 			const std::string &name = *it;
 			os << "|" << name << "| ";
 		}
 		os << std::endl;
 	}
-	if (!location.root.empty()) os << "      root: |" << location.root << "|" << std::endl;
+	if (!location.getRoot().empty()) os << "      root: |" << location.getRoot() << "|" << std::endl;
 	return os;
 }
