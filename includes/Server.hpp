@@ -35,8 +35,6 @@ class Server {
 		void setListen(const std::string& listen);
 		void setRoot(const std::string& root);
 		void setIndex(const std::string& index);
-		void print() const;
-		void printAllServers(std::vector<Server>& servers);
 
 };
 	std::ostream& operator<<(std::ostream& os, const Server& server);

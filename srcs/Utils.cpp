@@ -23,19 +23,6 @@ bool isValidHttpMethod(const std::string &method)
 }
 
 /**
- * Function to print all servers in the provided vector.
- *
- * @param servers A vector of Server objects to print.
- */
-void printAllServers(std::vector<Server> &servers)
-{
-	for (size_t i = 0; i < servers.size(); ++i)
-	{
-		servers[i].print();
-	}
-}
-
-/**
  * @struct IsNotSpace
  * @brief Functor to check if a character is not a space.
  */
