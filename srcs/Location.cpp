@@ -75,30 +75,23 @@ void Location::setRoot(const std::string &root)
 	this->root = root;
 }
 
-void Location::print() const
-{
-	std::cout << "    Location |" << path << "|" << std::endl;
-	if (!index.empty())
-		std::cout << "      index: |" << index << "|" << std::endl;
-	if (!allow.empty())
-	{
-		std::cout << "    allow: ";
-		for (std::vector<std::string>::const_iterator it = allow.begin(); it != allow.end(); ++it)
-		{
-			const std::string &name = *it;
-			std::cout << "|" << name << "| ";
-		}
-		std::cout << std::endl;
-	}
-	// if (!autoindex.empty()) std::cout << "    autoindex: " << autoindex << std::endl;
-	// if (!root.empty()) std::cout << "    root: " << root << std::endl;
-}
+
 
 std::ostream &operator<<(std::ostream &os, const Location &location)
 {
 	os << "    Location: |" << location.path << "|" << std::endl;
 	os << "      index: |" << location.index << "|" << std::endl;
 	os << "      autoindex: |" << location.autoindex << "|" << std::endl;
+	if (!location.allow.empty())
+	{
+		os << "      allow: ";
+		for (std::vector<std::string>::const_iterator it = location.allow.begin(); it != location.allow.end(); ++it)
+		{
+			const std::string &name = *it;
+			os << "|" << name << "| ";
+		}
+		os << std::endl;
+	}
 	if (!location.root.empty()) os << "      root: |" << location.root << "|" << std::endl;
 	return os;
 }
