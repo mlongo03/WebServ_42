@@ -23,13 +23,14 @@
 //allow GET POST DELETE only
 
 class Location {
-	public:
+	private:
 		std::string path;
 		std::string index;  //this is present also in Server class
 		std::vector<std::string> allow; // this is a list of HTTP methods it allows only GET POST DELETE
 		bool autoindex;
 		std::string root;
 
+	public:
 		//getters
 		std::vector<std::string> getAllow() const;
 		std::string getIndex() const;
@@ -48,8 +49,6 @@ class Location {
 		~Location();
 		Location(const Location& location);
 		Location& operator=(const Location& location);
-
-		void print() const;
 };
 
 std::ostream& operator<<(std::ostream& os, const Location& location);

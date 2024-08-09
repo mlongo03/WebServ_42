@@ -199,8 +199,7 @@ std::vector<Server> ConfigParser::parseServers(const std::vector<std::string> &l
 
 				if (inLocationBlock)
 				{
-					// std::cout << "pushing location" << std::endl;
-					currentServer.locations.push_back(currentLocation);
+					currentServer.addLocation(currentLocation); // Add the location to the server
 					inLocationBlock = false;
 				}
 				else if (inServerBlock)
