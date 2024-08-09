@@ -46,6 +46,9 @@ struct IsNotSpace
  */
 std::string trim(const std::string& str)
 {
+	if (str.empty() || std::find_if(str.begin(), str.end(), IsNotSpace()) == str.end())
+		return "";
+
 	std::string::const_iterator start = std::find_if(str.begin(), str.end(), IsNotSpace());
 	std::string::const_reverse_iterator end = std::find_if(str.rbegin(), str.rend(), IsNotSpace());
 
