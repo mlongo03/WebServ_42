@@ -64,7 +64,7 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 
 		if (key == "listen")
 		{
-			if (isValidPort(value))
+			if (isValidNumber(value))
 				currentServer.setListen(value);
 			else
 				throw std::runtime_error("Invalid port number: " + value);
@@ -92,6 +92,13 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 		else if (key == "index")
 		{
 			currentServer.setIndex(value);
+		}
+		else if (key == "client_max_body_size")
+		{
+			if (isValidNumber(value))
+				currentServer.setClientMaxBodySize(value);
+			else
+				throw std::runtime_error("Invalid body size: " + value);
 		}
 		else if (key == "error_page")
 		{

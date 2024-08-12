@@ -4,7 +4,8 @@
 Server::Server() :
 	host("0.0.0.0"),
 	listen("8080"),
-	index("index.html") // default index if no index is specified in the location block
+	index("index.html"), // default index if no index is specified in the location block
+	_client_max_body_size("1000") // default client_max_body_size 1000 kilobytes (1000 * 1024 bytes)
 {}
 
 Server::~Server()
@@ -32,6 +33,7 @@ Server& Server::operator=(const Server& rhs)
 		_error_page_500 = rhs._error_page_500;
 		_error_page_502 = rhs._error_page_502;
 		_error_page_503 = rhs._error_page_503;
+		_client_max_body_size = rhs._client_max_body_size;
 	}
 		return *this;
 };
@@ -90,6 +92,9 @@ std::string Server::getErrorPage503() const {
 	return _error_page_503;
 }
 
+std::string Server::getClientMaxBodySize() const {
+	return _client_max_body_size;
+}
 
 //setters methods
 
@@ -147,6 +152,9 @@ void Server::setErrorPage503(const std::string& _error_page_503) {
 	this->_error_page_503 = _error_page_503;
 }
 
+void Server::setClientMaxBodySize(const std::string& _client_max_body_size) {
+	this->_client_max_body_size = _client_max_body_size;
+}
 
 //overload the << operator to print the server object
 std::ostream& operator<<(std::ostream& os, const Server& server) {
@@ -167,6 +175,7 @@ std::ostream& operator<<(std::ostream& os, const Server& server) {
 	os << "  error_page_500: |" << server.getErrorPage500() << "|" << "\n";
 	os << "  error_page_502: |" << server.getErrorPage502() << "|" << "\n";
 	os << "  error_page_503: |" << server.getErrorPage503() << "|" << "\n";
+	os << "  client_max_body_size: |" << server.getClientMaxBodySize() << "|" << "\n";
 
 	std::vector<Location> locations = server.getLocations();
 	for (std::vector<Location>::const_iterator it = locations.begin(); it != locations.end(); ++it) {

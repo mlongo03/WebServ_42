@@ -55,38 +55,27 @@ std::string trimSpaces(const std::string& str)
 	return std::string(start, end.base());
 }
 
-/**
- * Checks if a string represents a valid port number.
- *
- * A valid port number is a numerical string that represents a number between 1 and 65535.
- *
- * @param str The string to check.
- * @return true if the string represents a valid port number, false otherwise.
- */
-bool isValidPort(const std::string &str)
-{
-	// Check if the string is not empty
-	// if (str.empty())
-	// {
-	// 	return false;
-	// }
 
+/**
+ * @brief Checks if a string represents a valid number.
+ *
+ * This function checks if all characters in the given string are digits and
+ * converts the string to an integer.
+ *
+ * @param str The string to be checked.
+ * @return true if the string represents a valid number, false otherwise.
+ */
+bool isValidNumber(const std::string &str)
+{
 	// Check if all characters in the string are digits
 	for (std::string::const_iterator it = str.begin(); it != str.end(); ++it)
 	{
 		if (!std::isdigit(*it))
-		{
 			return false;
-		}
 	}
-
-	// Convert the string to an integer and check if it's between 1 and 65535
-	int port = std::atoi(str.c_str());
-	// if (port < 1 || port > 65535)
-	// {
-	// 	return false;
-	// }
-	return port;
+	// Convert the string to an integer
+	int n = std::atoi(str.c_str());
+	return n;
 }
 
 
