@@ -3,11 +3,12 @@
 
 #include "Global.hpp"
 #include "Worker.hpp"
+#include "Client.hpp"
 
 class SignalHandler {
 public:
     static SignalHandler& getInstance();
-    void setupSignalHandlers(const std::vector<int>& sockets, Worker *worker);
+    void setupSignalHandlers(int *running);
     static void signalHandler(int signum);
 
 private:
@@ -16,8 +17,7 @@ private:
     SignalHandler(const SignalHandler&);  // Copy constructor
     SignalHandler& operator=(const SignalHandler&);  // Assignment operator
 
-    std::vector<int> sockets;
-    Worker *worker;
+    int *running;
 };
 
 #endif

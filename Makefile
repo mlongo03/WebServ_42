@@ -20,6 +20,9 @@ DEFAULT = \033[0m
 
 all: $(NAME)
 
+valgrind : $(NAME)
+	valgrind --leak-check=full --show-leak-kinds=all ./webserv config/config.conf
+
 obj/%.o: srcs/%.cpp
 	@mkdir -p $(@D)
 	@(c++ $(FLAGS) -c $< -o $@)

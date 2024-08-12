@@ -22,7 +22,6 @@ public:
     void setHost(std::string host);
     void setPort(std::string port);
     void setServer(Server *server);
-
     bool hasServer() const;
 
 private:

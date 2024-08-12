@@ -22,5 +22,6 @@
 #include <vector>
 #include <sstream>
 #include <algorithm>
+#include <sys/eventfd.h>
 
 #endif
