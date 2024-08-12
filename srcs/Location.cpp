@@ -82,16 +82,15 @@ std::ostream &operator<<(std::ostream &os, const Location &location)
 	os << "    Location: |" << location.getPath() << "|" << std::endl;
 	os << "      index: |" << location.getIndex() << "|" << std::endl;
 	os << "      autoindex: |" << location.getAutoindex() << "|" << std::endl;
-	if (!location.getAllow().empty())
-	{
-		os << "      allow: ";
-		std::vector<std::string> allow = location.getAllow();
-		for (std::vector<std::string>::const_iterator it = allow.begin(); it != allow.end(); ++it) {
-			const std::string &name = *it;
-			os << "|" << name << "| ";
-		}
-		os << std::endl;
+	os << "      root: |" << location.getRoot() << "|" << std::endl;
+
+	os << "      allow: ";
+	std::vector<std::string> allow = location.getAllow();
+	for (std::vector<std::string>::const_iterator it = allow.begin(); it != allow.end(); ++it) {
+		const std::string &name = *it;
+		os << "|" << name << "| ";
 	}
-	if (!location.getRoot().empty()) os << "      root: |" << location.getRoot() << "|" << std::endl;
+	os << std::endl;
+
 	return os;
 }

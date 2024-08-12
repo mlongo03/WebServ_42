@@ -44,7 +44,7 @@ struct IsNotSpace
  * @param str The string to trim.
  * @return The trimmed string.
  */
-std::string trim(const std::string& str)
+std::string trimSpaces(const std::string& str)
 {
 	if (str.empty() || std::find_if(str.begin(), str.end(), IsNotSpace()) == str.end())
 		return "";
@@ -63,7 +63,7 @@ std::string trim(const std::string& str)
  * @param str The string to check.
  * @return true if the string represents a valid port number, false otherwise.
  */
-bool is_valid_port(const std::string &str)
+bool isValidPort(const std::string &str)
 {
 	// Check if the string is not empty
 	// if (str.empty())
@@ -87,4 +87,21 @@ bool is_valid_port(const std::string &str)
 	// 	return false;
 	// }
 	return port;
+}
+
+
+/**
+ * @brief Removes semicolons from the end of a string.
+ *
+ * This function takes a string as input and removes any semicolons that appear at the end of the string.
+ *
+ * @param str The input string to be trimmed.
+ * @return The trimmed string with semicolons removed from the end.
+ */
+std::string trimSemicolons(const std::string& str) {
+    std::string trimmed = str;
+    while (!trimmed.empty() && trimmed[trimmed.size() - 1] == ';') {
+        trimmed.erase(trimmed.size() - 1);
+    }
+    return trimmed;
 }

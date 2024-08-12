@@ -14,7 +14,8 @@ class Location;
 
 bool isValidHttpMethod(const std::string& method);
 void printAllServers(std::vector<Server>& servers);
-bool is_valid_port(const std::string& str);
-std::string trim(const std::string& str);
+bool isValidPort(const std::string& str);
+std::string trimSpaces(const std::string& str);
+std::string trimSemicolons(const std::string& str);
 
 #endif
