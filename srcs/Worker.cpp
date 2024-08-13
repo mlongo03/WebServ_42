@@ -53,10 +53,13 @@ void Worker::run()
                 break ;
             for (size_t i = 0; i < events.size(); i++) {
                 if (events[i].events & EPOLLIN) {
-                    if (std::find(listeningSockets.begin(), listeningSockets.end(), events[i].data.fd) != listeningSockets.end()) {
-                        handleNewConnection(events[i].data.fd);
+                    std::vector<Socket>::iterator socket = std::find(listeningSockets.begin(), listeningSockets.end(), events[i].data.fd);
+                    if (socket != listeningSockets.end()) {
+                        handleNewConnection(*socket);
                     } else {
-                        handleClientData(events[i].data.fd);
+                        std::vector<Client>::iterator client = std::find(clientSockets.begin(), clientSockets.end(), events[i].data.fd);
+                        if (client != clientSockets.end())
+                            handleClientData(*client);
                     }
                 }
                 if (events[i].events & EPOLLOUT) {
@@ -73,13 +76,13 @@ void Worker::run()
     }
 }
 
-void Worker::handleNewConnection(int listeningSocket) {
+void Worker::handleNewConnection(Socket &socket) {
     struct sockaddr_storage clientAddr;
     socklen_t addrSize = sizeof clientAddr;
     char clientIP[INET6_ADDRSTRLEN];
     int clientPort;
 
-    int clientSocket = accept(listeningSocket, (struct sockaddr*)&clientAddr, &addrSize);
+    int clientSocket = accept(socket.getSocketFd(), (struct sockaddr*)&clientAddr, &addrSize);
 
     if (clientSocket == -1) {
         std::cerr << "accept error" << std::endl;
@@ -100,9 +103,9 @@ void Worker::handleNewConnection(int listeningSocket) {
     oss << clientPort;
     oss.str();
     std::cout << "Creating Client object with fd = " << clientSocket << ", socket = " << clientIP << ", port = " << oss.str() << std::endl;
-    Client client = Client(clientSocket, clientIP, oss.str());
+    Client client = Client(clientSocket, clientIP, oss.str(), socket);
     clientSockets.push_back(client);
-    std::cout << "Accepted new connection on socket " << listeningSocket << ", created tcp connection with fd " << clientSocket << std::endl;
+    std::cout << "Accepted new connection on socket " << socket.getSocketFd() << ", created tcp connection with fd " << clientSocket << std::endl;
 }
 
 bool Worker::isCompleteRequest(const std::string& request) {
@@ -110,72 +113,106 @@ bool Worker::isCompleteRequest(const std::string& request) {
     return request.find("\r\n\r\n") != std::string::npos;
 }
 
-void Worker::assignServerToClient(const Request& request, std::vector<Client>::iterator *it) {
+std::string Worker::hostToIp(std::string host) {
+
+    struct addrinfo hints, *res;
+    char ipstr[INET6_ADDRSTRLEN];
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+
+    int status = getaddrinfo(host.c_str(), NULL, &hints, &res);
+    if (status != 0) {
+        std::cerr << "getaddrinfo error: " << gai_strerror(status) << std::endl;
+        return "";
+    }
+
+	void *addr;
+	if (res->ai_family == AF_INET) {
+		struct sockaddr_in *ipv4 = (struct sockaddr_in *)res->ai_addr;
+		addr = &(ipv4->sin_addr);
+	} else {
+		struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)res->ai_addr;
+		addr = &(ipv6->sin6_addr);
+	}
+
+    inet_ntop(res->ai_family, addr, ipstr, sizeof(ipstr));
+    freeaddrinfo(res);
+    return std::string(ipstr);
+
+}
+
+bool containsAny(const std::string& target, const std::vector<std::string>& words) {
+    for (size_t i = 0; i < words.size(); i++) {
+        if (target.find(words[i]) != std::string::npos) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void Worker::assignServerToClient(const Request& request, Client &client) {
     std::map<std::string, std::string> headers = request.getHeaders();
     std::string host = headers.count("Host") ? headers.at("Host") : "";
-    std::string clientIP = (*it)->getHost();
-    std::string clientPort = (*it)->getPort();
+    std::cout << "host : " << host << std::endl;
+    Socket clientSocket = client.getSocket();
 
     std::vector<Server> filteredServers;
     for (size_t i = 0; i < servers.size(); i++) {
         const Server& server = servers[i];
-        // std::cout << server.getHost() << ":" << server.getListen() << " == " << clientIP << ":" << clientPort << std::endl;
-        if (server.getHost() == clientIP && server.getListen() == clientPort) {
+        std::cout << hostToIp(server.getHost()) << ":" << server.getListen() << " == " << clientSocket.getIp() << ":" << clientSocket.getPort() << std::endl;
+        if (hostToIp(server.getHost()) == clientSocket.getIp() && server.getListen() == clientSocket.getPort()) {
             filteredServers.push_back(server);
         }
     }
 
     Server* selectedServer = NULL;
     for (size_t i = 0; i < filteredServers.size(); i++) {
-        const Server& server = filteredServers[i];
+        Server& server = filteredServers[i];
         const std::vector<std::string>& serverNames = server.getServerNames();
-        if (std::find(serverNames.begin(), serverNames.end(), host) != serverNames.end()) {
-            selectedServer = const_cast<Server*>(&server);
+        if (containsAny(host, serverNames)) {
+            selectedServer = &server;
             break;
         }
     }
 
     if (selectedServer != NULL) {
-        if (*it != clientSockets.end()) {
-            (*it)->setServer(selectedServer);
-        }
+        client.setServer(&(*std::find(servers.begin(), servers.end(), *selectedServer)));
     } else {
-        (*it)->setServer(&filteredServers.front());
+        client.setServer(&(*std::find(servers.begin(), servers.end(), filteredServers.front())));
     }
+    // std::cout << "assigned server = " << client.getServer()->getHost() << std::endl;
 }
 
-void Worker::handleClientData(int clientSocket) {
+void Worker::handleClientData(Client &client) {
     char buffer[1024];
-    int bytesRead = recv(clientSocket, buffer, sizeof buffer, 0);
-    std::string request(buffer, bytesRead);
-    std::vector<Client>::iterator it = clientSockets.begin();
+    // int bytesRead = recv(client.getFd(), buffer, sizeof buffer, 0);
+    // std::string request(buffer, bytesRead);
+    std::string request;
+    int bytesRead;
 
-    // while ((bytesRead = recv(clientSocket, buffer, sizeof buffer, 0)) > 0) {
-    //     request.append(buffer, bytesRead);
+    while ((bytesRead = recv(client.getFd(), buffer, sizeof buffer, 0)) > 0) {
+        request.append(buffer, bytesRead);
 
-    //     std::cout << "test" << request << std::endl;
-    //     if (isCompleteRequest(request)) {
-    //         break;
-    //     }
-    // }
-
-    for (; it->getFd() != clientSocket; it++) {
+        if (isCompleteRequest(request)) {
+            break;
+        }
     }
 
     if (bytesRead <= 0) {
-        epollHandler.removeFd(clientSocket);
-        clientSockets.erase(it);
-        close(clientSocket);
-        std::cout << "Connection closed on socket " << clientSocket << std::endl;
+        epollHandler.removeFd(client.getFd());
+        clientSockets.erase(std::find(clientSockets.begin(), clientSockets.end(), client.getFd()));
+        close(client.getFd());
+        std::cout << "Connection closed on socket " << client.getFd() << std::endl;
     } else {
         // Handle HTTP request and send response
         std::cout << "message got = " << request << std::endl;
-        if (!it->hasServer()) {
+        if (!client.hasServer()) {
             // Create Request object
             Request request1 = Request(request);
-            // Assign server based on the request
-            assignServerToClient(request1, &it);
-            // std::cout << "assigned server = " << it->getServer() << std::endl;
+            assignServerToClient(request1, client);
+            std::cout << "assigned server = " << client.getServer()->getHost() << std::endl;
         }
     }
 }

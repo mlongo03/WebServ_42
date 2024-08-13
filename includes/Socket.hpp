@@ -11,18 +11,17 @@
 
 class Socket {
 public:
-    // Constructors and Destructor
     Socket();
     Socket(const Server& server);
+    Socket(const Socket& other);
+    Socket& operator=(const Socket& other);
     ~Socket();
 
-    // Getters
     int getSocketFd() const;
     std::string getPort() const;
     std::string getIp() const;
     std::string getHost() const;
 
-    // Setters
     void setSocketFd(int fd);
     void setPort(const std::string &port);
     void setIp(const std::string &ip);

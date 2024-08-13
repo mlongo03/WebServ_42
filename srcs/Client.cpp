@@ -5,20 +5,21 @@ Client::Client() : fd(-1), host(""), port(""), server(NULL) {}
 Client::~Client() {
 }
 
-Client::Client(int fd, std::string host, std::string port)
-    : fd(fd), host(host), port(port), server(NULL) {}
+Client::Client(int fd, std::string host, std::string port, Socket socket)
+    : fd(fd), host(host), port(port), socket(socket), server(NULL){}
 
-Client::Client(int fd, std::string host, std::string port, Server *server)
-    : fd(fd), host(host), port(port), server(server) {}
+Client::Client(int fd, std::string host, std::string port, Socket socket, Server *server)
+    : fd(fd), host(host), port(port), socket(socket), server(server) {}
 
 Client::Client(const Client &client)
-    : fd(client.fd), host(client.host), port(client.port), server(client.server) {}
+    : fd(client.fd), host(client.host), port(client.port), socket(client.socket), server(client.server) {}
 
 Client &Client::operator=(const Client &client) {
     if (this != &client) {
         fd = client.fd;
         host = client.host;
         port = client.port;
+        socket = client.socket;
         server = client.server;
     }
     return *this;
@@ -40,6 +41,10 @@ Server* Client::getServer() const {
     return server;
 }
 
+Socket Client::getSocket() const {
+    return socket;
+}
+
 void Client::setFd(int fd) {
     this->fd = fd;
 }
@@ -56,8 +61,19 @@ void Client::setServer(Server *server) {
     this->server = server;
 }
 
+void Client::setSocket(Socket socket) {
+    this->socket = socket;
+}
+
 bool Client::hasServer() const {
     return server != NULL;
+}
+
+bool	Client::operator==(int socket)
+{
+	if (this->fd == socket)
+		return true;
+	return false;
 }
 
 std::ostream& operator<<(std::ostream& os, const Client& client) {

@@ -25,6 +25,12 @@ Location &Location::operator=(const Location &rhs)
 	return *this;
 }
 
+bool Location::operator==(const Location& location) {
+	return (this->allow == location.allow && this->autoindex == location.autoindex
+				&& this->index == location.index && this->path == location.path
+				&& this->root == location.root);
+}
+
 std::vector<std::string> Location::getAllow() const
 {
 	return allow;

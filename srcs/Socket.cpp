@@ -73,6 +73,20 @@ Socket::Socket(const Server& server) {
     freeaddrinfo(res);
 }
 
+Socket::Socket(const Socket& other)
+    : socketfd(other.socketfd), port(other.port), ip(other.ip), host(other.host) {
+}
+
+Socket& Socket::operator=(const Socket& other) {
+    if (this != &other) {
+        socketfd = other.socketfd;
+        port = other.port;
+        ip = other.ip;
+        host = other.host;
+    }
+    return *this;
+}
+
 Socket::~Socket() {
 }
 

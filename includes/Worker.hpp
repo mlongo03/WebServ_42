@@ -18,12 +18,13 @@ public:
 
 private:
     void createSocket(const Server& server);
-    void handleNewConnection(int listeningSocket);
-    void handleClientData(int clientSocket);
+    void handleNewConnection(Socket &socket);
+    void handleClientData(Client &client);
     void handleWritableData(int clientSocket);
     void closeSockets();
-    void assignServerToClient(const Request& request, std::vector<Client>::iterator *it);
+    void assignServerToClient(const Request& request, Client &client);
     bool isCompleteRequest(const std::string& request);
+    std::string hostToIp(std::string host);
 
     std::vector<Socket> listeningSockets;
     std::vector<Client> clientSockets;

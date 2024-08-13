@@ -37,6 +37,7 @@ class Location {
 		std::string getPath() const;
 		bool getAutoindex() const;
 		std::string getRoot() const;
+		bool operator==(const Location& location);
 
 		//setters
 		void setIndex(const std::string& index);
