@@ -1,27 +1,40 @@
 #include "Worker.hpp"
 #include "SignalHandler.hpp"
 #define BACKLOG 10
+#define BUFFER_LENGHT 1024
 
 
 Worker::Worker(const std::vector<Server>& servers) {
     this->running = 1;
     this->servers = servers;
-	for (size_t i = 0; i < servers.size(); i++) {
-		try
-		{
-            Socket socket = Socket(servers[i]);
-			listeningSockets.push_back(socket);
-            epollHandler.addFd(socket.getSocketFd(), EPOLLIN | EPOLLOUT);
-		}
-		catch(const std::exception& e)
-		{
-			std::cerr << e.what() << '\n';
-		}
+
+    for (size_t i = 0; i < servers.size(); i++) {
+        try {
+            bool alreadyBound = false;
+            for (size_t j = 0; j < listeningSockets.size(); j++) {
+                if (listeningSockets[j].getIp() == hostToIp(servers[i].getHost()) &&
+                    listeningSockets[j].getPort() == servers[i].getListen()) {
+                    alreadyBound = true;
+                    std::cout << servers[i] << std::endl;
+                    break;
+                }
+            }
+
+            if (!alreadyBound) {
+                Socket socket = Socket(servers[i]);
+                listeningSockets.push_back(socket);
+                epollHandler.addFd(socket.getSocketFd(), EPOLLIN | EPOLLOUT);
+            }
+
+        } catch (const std::exception& e) {
+            std::cerr << e.what() << '\n';
+        }
     }
+
     int efd = eventfd(0, 0);
     if (efd == -1) {
         perror("eventfd");
-        return ;
+        return;
     }
     epollHandler.addFd(efd, EPOLLIN | EPOLLOUT);
     SignalHandler::getInstance().setupSignalHandlers(&running, efd);
@@ -161,7 +174,7 @@ void Worker::assignServerToClient(const Request& request, Client &client) {
     std::vector<Server> filteredServers;
     for (size_t i = 0; i < servers.size(); i++) {
         const Server& server = servers[i];
-        std::cout << hostToIp(server.getHost()) << ":" << server.getListen() << " == " << clientSocket.getIp() << ":" << clientSocket.getPort() << std::endl;
+        // std::cout << hostToIp(server.getHost()) << ":" << server.getListen() << " == " << clientSocket.getIp() << ":" << clientSocket.getPort() << std::endl;
         if (hostToIp(server.getHost()) == clientSocket.getIp() && server.getListen() == clientSocket.getPort()) {
             filteredServers.push_back(server);
         }
@@ -186,16 +199,13 @@ void Worker::assignServerToClient(const Request& request, Client &client) {
 }
 
 void Worker::handleClientData(Client &client) {
-    char buffer[1024];
-    // int bytesRead = recv(client.getFd(), buffer, sizeof buffer, 0);
-    // std::string request(buffer, bytesRead);
+    char buffer[BUFFER_LENGHT];
     std::string request;
     int bytesRead;
 
     while ((bytesRead = recv(client.getFd(), buffer, sizeof buffer, 0)) > 0) {
         request.append(buffer, bytesRead);
-
-        if (isCompleteRequest(request)) {
+        if (isCompleteRequest(request) || request.length() < BUFFER_LENGHT) {
             break;
         }
     }
@@ -212,7 +222,7 @@ void Worker::handleClientData(Client &client) {
             // Create Request object
             Request request1 = Request(request);
             assignServerToClient(request1, client);
-            std::cout << "assigned server = " << client.getServer()->getHost() << std::endl;
+            // std::cout << "assigned server = " << *client.getServer() << std::endl;
         }
     }
 }
