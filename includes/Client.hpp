@@ -29,6 +29,7 @@ private:
     std::string host;
     std::string port;
     Server *server;
+    // Socket socket;
 };
 
 std::ostream& operator<<(std::ostream& os, const Client& client);

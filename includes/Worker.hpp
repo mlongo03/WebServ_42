@@ -6,13 +6,13 @@
 #include "Epoll.hpp"
 #include "Client.hpp"
 #include "Request.hpp"
+#include "Socket.hpp"
 
 class Worker {
 public:
     Worker(const std::vector<Server>& servers);
     ~Worker();
-    std::vector<int> getSockets() const;
-    std::vector<int> getListeningSockets() const;
+    std::vector<Socket> getListeningSockets() const;
     std::vector<Client> getClientSockets() const;
     void run();
 
@@ -22,10 +22,10 @@ private:
     void handleClientData(int clientSocket);
     void handleWritableData(int clientSocket);
     void closeSockets();
-    void assignServerToClient(const Request& request, std::vector<Client>::iterator it);
+    void assignServerToClient(const Request& request, std::vector<Client>::iterator *it);
     bool isCompleteRequest(const std::string& request);
 
-    std::vector<int> listeningSockets;
+    std::vector<Socket> listeningSockets;
     std::vector<Client> clientSockets;
     std::vector<Server> servers;
     Epoll epollHandler;

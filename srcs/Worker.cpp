@@ -9,14 +9,22 @@ Worker::Worker(const std::vector<Server>& servers) {
 	for (size_t i = 0; i < servers.size(); i++) {
 		try
 		{
-			createSocket(servers[i]);
+            Socket socket = Socket(servers[i]);
+			listeningSockets.push_back(socket);
+            epollHandler.addFd(socket.getSocketFd(), EPOLLIN | EPOLLOUT);
 		}
 		catch(const std::exception& e)
 		{
 			std::cerr << e.what() << '\n';
 		}
     }
-    SignalHandler::getInstance().setupSignalHandlers(&running);
+    int efd = eventfd(0, 0);
+    if (efd == -1) {
+        perror("eventfd");
+        return ;
+    }
+    epollHandler.addFd(efd, EPOLLIN | EPOLLOUT);
+    SignalHandler::getInstance().setupSignalHandlers(&running, efd);
 }
 
 Worker::~Worker() {
@@ -26,7 +34,7 @@ Worker::~Worker() {
 void	Worker::closeSockets()
 {
     for (size_t i = 0; i < listeningSockets.size(); i++) {
-        close(listeningSockets[i]);
+        close(listeningSockets[i].getSocketFd());
     }
     for (size_t i = 0; i < clientSockets.size(); i++) {
         close(clientSockets[i].getFd());
@@ -63,56 +71,6 @@ void Worker::run()
 			return ;
         }
     }
-}
-
-void Worker::createSocket(const Server& server) {
-    int sockfd;
-    struct addrinfo hints, *res, *p;
-    int yes = 1;
-
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-
-    if (getaddrinfo(server.getHost().c_str(), server.getListen().c_str(), &hints, &res) != 0) {
-        throw std::runtime_error("getaddrinfo error");
-    }
-
-    for (p = res; p != NULL; p = p->ai_next) {
-        if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-            continue;
-        }
-
-        if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1) {
-            close(sockfd);
-            throw std::runtime_error("setsockopt error");
-        }
-
-        if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-            close(sockfd);
-            continue;
-        }
-
-        break;
-    }
-
-    freeaddrinfo(res);
-
-    if (p == NULL) {
-        std::string error = "\033[1;31mfailed to bind socket\nHost : " + server.getHost() + "\nPort : " + server.getListen() + "\033[0m";
-        throw std::runtime_error(error);
-    }
-
-    if (listen(sockfd, BACKLOG) == -1) {
-        close(sockfd);
-        throw std::runtime_error("listen error");
-    }
-
-    listeningSockets.push_back(sockfd);
-    epollHandler.addFd(sockfd, EPOLLIN | EPOLLOUT);
-
-	// server.print();
-	std::cout << server << std::endl;
 }
 
 void Worker::handleNewConnection(int listeningSocket) {
@@ -152,15 +110,16 @@ bool Worker::isCompleteRequest(const std::string& request) {
     return request.find("\r\n\r\n") != std::string::npos;
 }
 
-void Worker::assignServerToClient(const Request& request, std::vector<Client>::iterator it) {
+void Worker::assignServerToClient(const Request& request, std::vector<Client>::iterator *it) {
     std::map<std::string, std::string> headers = request.getHeaders();
     std::string host = headers.count("Host") ? headers.at("Host") : "";
-    std::string clientIP = it->getHost();
-    std::string clientPort = it->getPort();
+    std::string clientIP = (*it)->getHost();
+    std::string clientPort = (*it)->getPort();
 
     std::vector<Server> filteredServers;
     for (size_t i = 0; i < servers.size(); i++) {
         const Server& server = servers[i];
+        // std::cout << server.getHost() << ":" << server.getListen() << " == " << clientIP << ":" << clientPort << std::endl;
         if (server.getHost() == clientIP && server.getListen() == clientPort) {
             filteredServers.push_back(server);
         }
@@ -177,27 +136,28 @@ void Worker::assignServerToClient(const Request& request, std::vector<Client>::i
     }
 
     if (selectedServer != NULL) {
-        if (it != clientSockets.end()) {
-            it->setServer(selectedServer);
+        if (*it != clientSockets.end()) {
+            (*it)->setServer(selectedServer);
         }
     } else {
-        selectedServer = &filteredServers.front();
+        (*it)->setServer(&filteredServers.front());
     }
 }
 
 void Worker::handleClientData(int clientSocket) {
     char buffer[1024];
-    int bytesRead;
-    std::string request;
+    int bytesRead = recv(clientSocket, buffer, sizeof buffer, 0);
+    std::string request(buffer, bytesRead);
     std::vector<Client>::iterator it = clientSockets.begin();
 
-    while ((bytesRead = recv(clientSocket, buffer, sizeof buffer, 0)) > 0) {
-        request.append(buffer, bytesRead);
+    // while ((bytesRead = recv(clientSocket, buffer, sizeof buffer, 0)) > 0) {
+    //     request.append(buffer, bytesRead);
 
-        if (isCompleteRequest(request)) {
-            break;
-        }
-    }
+    //     std::cout << "test" << request << std::endl;
+    //     if (isCompleteRequest(request)) {
+    //         break;
+    //     }
+    // }
 
     for (; it->getFd() != clientSocket; it++) {
     }
@@ -212,10 +172,10 @@ void Worker::handleClientData(int clientSocket) {
         std::cout << "message got = " << request << std::endl;
         if (!it->hasServer()) {
             // Create Request object
-            Request request(request);
+            Request request1 = Request(request);
             // Assign server based on the request
-            assignServerToClient(request, it);
-            std::cout << "assigned server = " << it->getServer() << std::endl;
+            assignServerToClient(request1, &it);
+            // std::cout << "assigned server = " << it->getServer() << std::endl;
         }
     }
 }
@@ -226,11 +186,7 @@ void Worker::handleWritableData(int clientSocket) {
     // For example, you might have a buffer to write data to the socket
 }
 
-std::vector<int> Worker::getSockets() const {
-    return this->listeningSockets;
-}
-
-std::vector<int> Worker::getListeningSockets() const {
+std::vector<Socket> Worker::getListeningSockets() const {
     return listeningSockets;
 }
 

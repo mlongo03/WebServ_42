@@ -8,7 +8,7 @@
 class SignalHandler {
 public:
     static SignalHandler& getInstance();
-    void setupSignalHandlers(int *running);
+    void setupSignalHandlers(int *running, int efd);
     static void signalHandler(int signum);
 
 private:
@@ -18,6 +18,7 @@ private:
     SignalHandler& operator=(const SignalHandler&);  // Assignment operator
 
     int *running;
+    int efd;
 };
 
 #endif
