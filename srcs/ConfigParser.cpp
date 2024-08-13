@@ -169,6 +169,21 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 				throw std::runtime_error("value of root in location must start with /");
 			currentLocation.setRoot(value);
 		}
+		else if (key == "cgi_extension")
+		{
+			// std::vector<std::string> cgi;
+			// std::istringstream iss(value);
+			// std::string token;
+			// while (iss >> token)
+			// {
+			// 	std::cout << "token is: " << token << std::endl;
+			// 	// if (hasValidExtension(token))
+			// 		cgi.push_back(token);
+			// 	// else
+			// 	// 	throw std::runtime_error("Invalid file extension: " + token);
+			// }
+			// currentLocation.setCgiExtension(cgi);
+		}
 		else
 		{
 			throw std::runtime_error("Unknown key in location block: " + key);

@@ -21,6 +21,7 @@ class Server {
 		std::string _error_page_502;
 		std::string _error_page_503;
 		std::string _client_max_body_size;
+
 		std::vector<Location> locations;
 
 	public:

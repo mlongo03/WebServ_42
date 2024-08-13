@@ -16,5 +16,6 @@ bool isValidHttpMethod(const std::string& method);
 bool isValidNumber(const std::string& str);
 std::string trimSpaces(const std::string& str);
 std::string trimSemicolons(const std::string& str);
+bool hasValidExtension(const std::string& filename);
 
 #endif
