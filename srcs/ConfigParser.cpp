@@ -171,18 +171,18 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 		}
 		else if (key == "cgi_extension")
 		{
-			// std::vector<std::string> cgi;
-			// std::istringstream iss(value);
-			// std::string token;
-			// while (iss >> token)
-			// {
-			// 	std::cout << "token is: " << token << std::endl;
-			// 	// if (hasValidExtension(token))
-			// 		cgi.push_back(token);
-			// 	// else
-			// 	// 	throw std::runtime_error("Invalid file extension: " + token);
-			// }
-			// currentLocation.setCgiExtension(cgi);
+			std::vector<std::string> cgi;
+			std::istringstream iss(value);
+			std::string token;
+			while (iss >> token)
+			{
+				std::cout << "token is: " << token << std::endl;
+				if (hasValidExtension(token))
+					cgi.push_back(token);
+				else
+					throw std::runtime_error("Invalid file extension: " + token);
+			}
+			currentLocation.setCgiExtension(cgi);
 		}
 		else
 		{

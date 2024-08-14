@@ -98,16 +98,16 @@ std::ostream &operator<<(std::ostream &os, const Location &location)
 	os << "      autoindex: |" << location.getAutoindex() << "|" << std::endl;
 	os << "      root: |" << location.getRoot() << "|" << std::endl;
 
-	// os << "      cgi_extension: ";
-	// std::vector<std::string> cgi_extension = location.getCgiExtension();
-	// for (std::vector<std::string>::const_iterator it = cgi_extension.begin(); it != cgi_extension.end(); ++it) {
-	// 	const std::string &name = *it;
-	// 	os << "|" << name << "| ";
-	// }
-	// os << std::endl;
 	os << "      allow: ";
 	std::vector<std::string> allow = location.getAllow();
 	for (std::vector<std::string>::const_iterator it = allow.begin(); it != allow.end(); ++it) {
+		const std::string &name = *it;
+		os << "|" << name << "| ";
+	}
+	os << std::endl;
+	os << "      cgi_extension: ";
+	std::vector<std::string> cgi_extension = location.getCgiExtension();
+	for (std::vector<std::string>::const_iterator it = cgi_extension.begin(); it != cgi_extension.end(); ++it) {
 		const std::string &name = *it;
 		os << "|" << name << "| ";
 	}
