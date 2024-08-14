@@ -17,6 +17,162 @@ ConfigParser &ConfigParser::operator=(const ConfigParser &rhs)
 	return *this;
 }
 
+
+/**
+ * @brief Parses the configuration file and returns a vector of Server objects.
+ *
+ * This function reads the contents of the specified file and parses it line by line.
+ * It throws a std::runtime_error if the file cannot be opened.
+ *
+ * @param filename The path to the configuration file.
+ * @return A vector of Server objects parsed from the configuration file.
+ * @throws std::runtime_error if the file cannot be opened.
+ */
+std::vector<Server> ConfigParser::parseConfig(const std::string &filename)
+{
+	std::ifstream file(filename.c_str());
+	if (!file)
+	{
+		throw std::runtime_error("Could not open file");
+	}
+
+	std::vector<std::string> lines;
+	std::string line;
+	while (std::getline(file, line))
+	{
+		lines.push_back(line);
+	}
+
+	return parseServers(lines);
+}
+
+
+/**
+ * @brief Parses the server configurations from the given lines of text.
+ *
+ * This function takes a vector of strings representing the lines of a configuration file and parses them to extract the server configurations.
+ * It returns a vector of Server objects representing the parsed server configurations.
+ *
+ * @param lines The vector of strings representing the lines of the configuration file.
+ * @return std::vector<Server> The vector of Server objects representing the parsed server configurations.
+ */
+std::vector<Server> ConfigParser::parseServers(const std::vector<std::string> &lines)
+{
+	std::vector<Server> servers;
+	Server currentServer;
+	Location currentLocation;
+	bool inServerBlock = false;
+	bool inLocationBlock = false;
+
+	for (size_t i = 0; i < lines.size(); ++i)
+	{
+		std::string line = lines[i];
+
+		// Ignore comments and empty lines
+		if (line.empty() || line[0] == '#')
+		{
+			continue;
+		}
+
+		// Remove leading and trailing spaces
+		line.erase(0, line.find_first_not_of(" \t\n\r\f\v"));
+		line.erase(line.find_last_not_of(" \t\n\r\f\v") + 1);
+
+		try
+		{
+			if (line == "server {")
+			{
+				// std::cout << "entered server block" << std::endl;
+				inServerBlock = true;
+				currentServer = Server();
+			}
+			else if (line.substr(0, 8) == "location") // Check if the line starts a location block
+			{
+				inLocationBlock = true;
+				currentLocation = Location();
+
+				size_t spacePos = line.find_first_of(" \t\n\r\f\v"); //changed to all kind of spaces
+				size_t openBracePos = line.find('{');
+				if (spacePos == std::string::npos)
+				{
+					throw std::runtime_error("Invalid location block no location path found");
+				}
+				if (openBracePos == std::string::npos)
+				{
+					throw std::runtime_error("Invalid location block open braces not found");
+				}
+				// Get the value of the path
+				std::string valuePath = line.substr(spacePos, line.size() - spacePos - 1); // Get the value
+				valuePath = trimSpaces(valuePath);
+				// std::cout << "value of location path is: " << valuePath << std::endl;
+				if (valuePath.empty())
+				{
+					throw std::runtime_error("Invalid location path");
+				}
+				else if (valuePath[0] != '/')
+				{
+					throw std::runtime_error("Location path must start with /");
+				}
+				else
+					currentLocation.setPath(valuePath); // Set the path of the location
+			}
+			else if (line == "}")
+			{
+
+				if (inLocationBlock)
+				{
+					currentServer.addLocation(currentLocation); // Add the location to the server
+					inLocationBlock = false;
+				}
+				else if (inServerBlock)
+				{
+					servers.push_back(currentServer);
+					inServerBlock = false;
+				}
+			}
+			else
+			{
+				// Parse the line based on whether it's in a server block or a location block
+				parseLine(line, inServerBlock, inLocationBlock, currentServer, currentLocation);
+			}
+		}
+		catch (const std::exception &e)
+		{
+			std::cerr << "Error parsing server block: " << e.what() << std::endl;
+			// If an error occurs, skip the rest of the current server block
+			while (i < lines.size() && lines[i] != "}")
+			{
+				++i;
+			}
+			inServerBlock = false;
+			inLocationBlock = false;
+		}
+	}
+	return servers;
+}
+
+
+/**
+ * @brief Parses a single line of configuration and updates the corresponding server and location objects.
+ *
+ * This function takes a line of configuration as input and updates the server and location objects accordingly.
+ * It ignores comment lines and throws exceptions for invalid line formats or empty values.
+ * The line is expected to have a key-value pair format, with the key separated from the value by spaces.
+ * The value can be a single value or a list of values separated by spaces.
+ * The function checks if the line is within a server block or a location block and updates the corresponding objects accordingly.
+ *
+ * @param line The line of configuration to parse.
+ * @param inServerBlock A boolean indicating if the line is within a server block.
+ * @param inLocationBlock A boolean indicating if the line is within a location block.
+ * @param currentServer The current server object to update.
+ * @param currentLocation The current location object to update.
+ *
+ * @throws std::runtime_error If the line format is invalid, the value is empty, or the line does not end with a semicolon.
+ * @throws std::runtime_error If the port number, body size, HTTP method, or file extension is invalid.
+ * @throws std::runtime_error If an unknown key is encountered in the server block or location block.
+ *
+ * @return void
+ */
 void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool inLocationBlock, Server &currentServer, Location &currentLocation)
 {
 	// Ignore comment lines
@@ -195,115 +351,4 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 	}
 }
 
-std::vector<Server> ConfigParser::parseServers(const std::vector<std::string> &lines)
-{
-	std::vector<Server> servers;
-	Server currentServer;
-	Location currentLocation;
-	bool inServerBlock = false;
-	bool inLocationBlock = false;
 
-	for (size_t i = 0; i < lines.size(); ++i)
-	{
-		std::string line = lines[i];
-
-		// Ignore comments and empty lines
-		if (line.empty() || line[0] == '#')
-		{
-			continue;
-		}
-
-		// Remove leading and trailing spaces
-		line.erase(0, line.find_first_not_of(" \t\n\r\f\v"));
-		line.erase(line.find_last_not_of(" \t\n\r\f\v") + 1);
-
-		try
-		{
-			if (line == "server {")
-			{
-				// std::cout << "entered server block" << std::endl;
-				inServerBlock = true;
-				currentServer = Server();
-			}
-			else if (line.substr(0, 8) == "location") // Check if the line starts a location block
-			{
-				inLocationBlock = true;
-				currentLocation = Location();
-
-				size_t spacePos = line.find_first_of(" \t\n\r\f\v"); //changed to all kind of spaces
-				size_t openBracePos = line.find('{');
-				if (spacePos == std::string::npos)
-				{
-					throw std::runtime_error("Invalid location block no location path found");
-				}
-				if (openBracePos == std::string::npos)
-				{
-					throw std::runtime_error("Invalid location block open braces not found");
-				}
-				// Get the value of the path
-				std::string valuePath = line.substr(spacePos, line.size() - spacePos - 1); // Get the value
-				valuePath = trimSpaces(valuePath);
-				// std::cout << "value of location path is: " << valuePath << std::endl;
-				if (valuePath.empty())
-				{
-					throw std::runtime_error("Invalid location path");
-				}
-				else if (valuePath[0] != '/')
-				{
-					throw std::runtime_error("Location path must start with /");
-				}
-				else
-					currentLocation.setPath(valuePath); // Set the path of the location
-			}
-			else if (line == "}")
-			{
-
-				if (inLocationBlock)
-				{
-					currentServer.addLocation(currentLocation); // Add the location to the server
-					inLocationBlock = false;
-				}
-				else if (inServerBlock)
-				{
-					servers.push_back(currentServer);
-					inServerBlock = false;
-				}
-			}
-			else
-			{
-				// Parse the line based on whether it's in a server block or a location block
-				parseLine(line, inServerBlock, inLocationBlock, currentServer, currentLocation);
-			}
-		}
-		catch (const std::exception &e)
-		{
-			std::cerr << "Error parsing server block: " << e.what() << std::endl;
-			// If an error occurs, skip the rest of the current server block
-			while (i < lines.size() && lines[i] != "}")
-			{
-				++i;
-			}
-			inServerBlock = false;
-			inLocationBlock = false;
-		}
-	}
-	return servers;
-}
-
-std::vector<Server> ConfigParser::parseConfig(const std::string &filename)
-{
-	std::ifstream file(filename.c_str());
-	if (!file)
-	{
-		throw std::runtime_error("Could not open file");
-	}
-
-	std::vector<std::string> lines;
-	std::string line;
-	while (std::getline(file, line))
-	{
-		lines.push_back(line);
-	}
-
-	return parseServers(lines);
-}

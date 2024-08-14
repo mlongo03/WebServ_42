@@ -96,9 +96,18 @@ std::string trimSemicolons(const std::string& str) {
 }
 
 
+/**
+ * @brief Checks if a filename has a valid extension.
+ *
+ * This function checks if a given filename has a valid extension.
+ * A valid extension is defined as a single dot at the beginning of the filename, followed by one or more characters.
+ * The dot should not be the last character of the filename.
+ *
+ * @param filename The filename to check.
+ * @return True if the filename has a valid extension, false otherwise.
+ */
 bool hasValidExtension(const std::string& filename) {
 	size_t dotPos = filename.find_last_of('.');
-	std::cout << "dotPos: " << dotPos << std::endl;
 	if (dotPos != 0) // only 1 dot at the beginnig of the filename is allowed
 		return false;
 	if (dotPos == std::string::npos)// no dot in the filename
