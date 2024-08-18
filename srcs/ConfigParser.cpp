@@ -332,7 +332,7 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 			std::string token;
 			while (iss >> token)
 			{
-				std::cout << "token is: " << token << std::endl;
+				//std::cout << "token is: " << token << std::endl;
 				if (hasValidExtension(token))
 					cgi.push_back(token);
 				else

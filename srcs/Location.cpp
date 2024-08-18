@@ -1,7 +1,7 @@
 #include "Location.hpp"
 
 Location::Location() : path("/"),
-					   index("index.html"), // if no index is specified in the location block
+					//    index("index.html"), // if no index is specified in the location block
 					   autoindex(false)
 {}
 
