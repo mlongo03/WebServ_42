@@ -44,7 +44,7 @@ struct IsNotSpace
  * @param str The string to trim.
  * @return The trimmed string.
  */
-std::string trim(const std::string& str)
+std::string trimSpaces(const std::string& str)
 {
 	if (str.empty() || std::find_if(str.begin(), str.end(), IsNotSpace()) == str.end())
 		return "";
@@ -55,36 +55,64 @@ std::string trim(const std::string& str)
 	return std::string(start, end.base());
 }
 
-/**
- * Checks if a string represents a valid port number.
- *
- * A valid port number is a numerical string that represents a number between 1 and 65535.
- *
- * @param str The string to check.
- * @return true if the string represents a valid port number, false otherwise.
- */
-bool is_valid_port(const std::string &str)
-{
-	// Check if the string is not empty
-	// if (str.empty())
-	// {
-	// 	return false;
-	// }
 
+/**
+ * @brief Checks if a string represents a valid number.
+ *
+ * This function checks if all characters in the given string are digits and
+ * converts the string to an integer.
+ *
+ * @param str The string to be checked.
+ * @return true if the string represents a valid number, false otherwise.
+ */
+bool isValidNumber(const std::string &str)
+{
 	// Check if all characters in the string are digits
 	for (std::string::const_iterator it = str.begin(); it != str.end(); ++it)
 	{
 		if (!std::isdigit(*it))
-		{
 			return false;
-		}
 	}
+	// Convert the string to an integer
+	int n = std::atoi(str.c_str());
+	return n;
+}
 
-	// Convert the string to an integer and check if it's between 1 and 65535
-	int port = std::atoi(str.c_str());
-	// if (port < 1 || port > 65535)
-	// {
-	// 	return false;
-	// }
-	return port;
+
+/**
+ * @brief Removes semicolons from the end of a string.
+ *
+ * This function takes a string as input and removes any semicolons that appear at the end of the string.
+ *
+ * @param str The input string to be trimmed.
+ * @return The trimmed string with semicolons removed from the end.
+ */
+std::string trimSemicolons(const std::string& str) {
+    std::string trimmed = str;
+    while (!trimmed.empty() && trimmed[trimmed.size() - 1] == ';') {
+        trimmed.erase(trimmed.size() - 1);
+    }
+    return trimmed;
+}
+
+
+/**
+ * @brief Checks if a filename has a valid extension.
+ *
+ * This function checks if a given filename has a valid extension.
+ * A valid extension is defined as a single dot at the beginning of the filename, followed by one or more characters.
+ * The dot should not be the last character of the filename.
+ *
+ * @param filename The filename to check.
+ * @return True if the filename has a valid extension, false otherwise.
+ */
+bool hasValidExtension(const std::string& filename) {
+	size_t dotPos = filename.find_last_of('.');
+	if (dotPos != 0) // only 1 dot at the beginnig of the filename is allowed
+		return false;
+	if (dotPos == std::string::npos)// no dot in the filename
+		return false;
+	if (dotPos == filename.size() - 1) // dot is the last character
+		return false;
+	return true;
 }
