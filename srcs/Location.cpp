@@ -57,11 +57,6 @@ std::string Location::getRoot() const
 	return root;
 }
 
-std::vector<std::string> Location::getAllow() const
-{
-	return allow;
-}
-
 std::vector<std::string> Location::getCgiExtension() const
 {
 	return _cgi_extension;

@@ -6,7 +6,7 @@ import sys
 
 def main():
     # Set up headers for the response
-    print("Content-Type: text/plain\n")
+    print("Content: text/plain\n")
 
     # Retrieve the query string from the environment
     query_string = os.environ.get("QUERY_STRING", "")
