@@ -29,6 +29,7 @@ class Location {
 		std::vector<std::string> allow; // this is a list of HTTP methods it allows only GET POST DELETE
 		bool autoindex;
 		std::string root;
+		std::vector<std::string> _cgi_extension;
 
 	public:
 		//getters
@@ -38,6 +39,7 @@ class Location {
 		bool getAutoindex() const;
 		std::string getRoot() const;
 		bool operator==(const Location& location);
+		std::vector<std::string> getCgiExtension() const;
 
 		//setters
 		void setIndex(const std::string& index);
@@ -45,6 +47,7 @@ class Location {
 		void setAllow(const std::vector<std::string>& allow);
 		void setAutoindex(bool autoindex);
 		void setRoot(const std::string& root);
+		void setCgiExtension(const std::vector<std::string>  &cgi_extension);
 
 		Location();
 		~Location();
