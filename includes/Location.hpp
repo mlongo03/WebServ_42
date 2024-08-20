@@ -38,6 +38,7 @@ class Location {
 		std::string getPath() const;
 		bool getAutoindex() const;
 		std::string getRoot() const;
+		bool operator==(const Location& location);
 		std::vector<std::string> getCgiExtension() const;
 
 		//setters

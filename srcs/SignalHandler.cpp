@@ -9,20 +9,18 @@ SignalHandler& SignalHandler::getInstance() {
     return instance;
 }
 
-void SignalHandler::setupSignalHandlers(const std::vector<int>& sockets, Worker *worker) {
-    this->sockets = sockets;
-    this->worker = worker;
+void SignalHandler::setupSignalHandlers(int *running, int efd) {
+    this->running = running;
+    this->efd = efd;
     signal(SIGINT, SignalHandler::signalHandler);
 }
 
 void SignalHandler::signalHandler(int signum) {
     if (signum == SIGINT) {
+        uint64_t u = 1;
         std::cout << " Caught SIGINT, exiting..." << std::endl;
         SignalHandler& handler = SignalHandler::getInstance();
-        for (std::vector<int>::iterator it = handler.sockets.begin(); it != handler.sockets.end(); ++it) {
-            close(*it);
-        }
-        handler.worker->~Worker();
-        exit(EXIT_FAILURE);
+        write(handler.efd, &u, sizeof(uint64_t));
+        *handler.running = 0;
     }
 }

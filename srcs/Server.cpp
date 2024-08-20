@@ -16,7 +16,6 @@ Server::Server(const Server& src)
 	*this = src;
 }
 
-
 Server& Server::operator=(const Server& rhs)
 {
 	if (this != &rhs) {
@@ -38,7 +37,22 @@ Server& Server::operator=(const Server& rhs)
 		return *this;
 };
 
-//getters methods
+bool Server::equalLocations(std::vector<Location> locationss) {
+	if (locationss.size() == this->locations.size()) {
+		for (size_t i = 0; i < this->locations.size(); i++) {
+			if (std::find(locationss.begin(), locationss.end(), this->locations[i]) == locationss.end()) {
+				return false;
+			}
+		}
+		return true;
+	}
+	return false;
+}
+
+bool Server::operator==(const Server& server) {
+	return (this->host == server.host && this->index == server.index
+			&& this->listen == server.listen && equalLocations(server.locations));
+}
 
 std::vector<std::string> Server::getServerNames() const{
 	return server_names;

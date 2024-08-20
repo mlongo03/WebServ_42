@@ -29,6 +29,8 @@ class Server {
 		~Server();
 		Server(const Server& server);
 		Server& operator=(const Server& server);
+		bool operator==(const Server& server);
+		bool equalLocations(std::vector<Location> locations);
 
 		//getters
 		std::vector<std::string> getServerNames() const;
