@@ -4,6 +4,7 @@
 #include <string>
 #include <iostream>
 
+
 /**
  * Checks if the provided string is a valid HTTP method.
  *
@@ -115,4 +116,55 @@ bool hasValidExtension(const std::string& filename) {
 	if (dotPos == filename.size() - 1) // dot is the last character
 		return false;
 	return true;
+}
+
+
+//cgi part
+
+
+// bool isExecutable(const std::string& path) {
+//     struct stat sb;
+//     return (stat(path.c_str(), &sb) == 0 && sb.st_mode & S_IXUSR);
+// }
+
+bool isExecutable(const std::string& path) {
+    struct stat sb; // Declare a stat structure to hold file information
+
+    // Call stat to fill the stat structure with information about the file
+    // stat returns 0 on success, -1 on failure
+    if (stat(path.c_str(), &sb) == 0) {
+        // Check if the file is executable by the owner
+        // S_IXUSR is a macro that represents the execute permission bit for the owner
+        return (sb.st_mode & S_IXUSR);
+    }
+
+    // If stat fails, return false
+    return false;
+}
+
+
+
+// Function to check if a file is valid and executable
+bool isValidFile(const std::string& path) {
+    struct stat sb;
+
+	std::cout<< "path in isvalidfile is " << path <<std::endl;
+    // Check if the file exists and get file information
+
+    if (stat(path.c_str(), &sb) != 0) {
+		std::cout<< "file does not exist" <<std::endl;
+        return false; // File does not exist
+    }
+
+    // Check if it is a regular file
+    if (!S_ISREG(sb.st_mode)) {
+        return false; // Not a regular file
+    }
+
+    // Check if the file is executable by the owner
+    if (!(sb.st_mode & S_IXUSR)) {
+        return false; // Not executable by the owner
+    }
+
+    return true; // File exists, is regular, and is executable
 }

@@ -17,5 +17,8 @@ bool isValidNumber(const std::string& str);
 std::string trimSpaces(const std::string& str);
 std::string trimSemicolons(const std::string& str);
 bool hasValidExtension(const std::string& filename);
+bool isValidFile(const std::string& filename);
+std::string getAbsolutePath(const std::string &path);
+
 
 #endif
