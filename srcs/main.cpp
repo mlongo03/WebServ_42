@@ -6,29 +6,29 @@
 #include "cgi.hpp"
 
 
-// int main(int argc, char **argv)
-// {
-// 	if (argc != 2)
-// 	{
-// 		std::cerr << "Usage: " << argv[0] << " <config_file>" << std::endl;
-// 		exit(EXIT_FAILURE);
-// 	}
-// 	else
-// 	{
-// 		try
-// 		{
-// 			ConfigParser configParser;
-// 			Worker worker = Worker(configParser.parseConfig(argv[1]));
-// 			worker.run();
-// 		}
-// 		catch (std::exception &e)
-// 		{
-// 			std::cerr << e.what() << std::endl;
-// 			exit(EXIT_FAILURE);
-// 		}
-// 	}
-// 	return 0;
-// }
+int main(int argc, char **argv)
+{
+	if (argc != 2)
+	{
+		std::cerr << "Usage: " << argv[0] << " <config_file>" << std::endl;
+		return(1);
+	}
+	else
+	{
+		try
+		{
+			ConfigParser configParser;
+			Worker worker = Worker(configParser.parseConfig(argv[1]));
+			worker.run();
+		}
+		catch (std::exception &e)
+		{
+			std::cerr << e.what() << std::endl;
+			return(1);
+		}
+	}
+	return 0;
+}
 
 // test fake GET request
 // int main() {
@@ -116,48 +116,48 @@
 //     }
 // }
 
-int main() {
-    // Simulate a GET request
-    std::string getUrl = "/cgi-bin/test.py?name=John&age=30";
-    std::string getMethod = "GET";
-    std::string getBody = "";  // GET does not send a body
+// int main() {
+//     // Simulate a GET request
+//     std::string getUrl = "/cgi-bin/test.py?name=John&age=30";
+//     std::string getMethod = "GET";
+//     std::string getBody = "";  // GET does not send a body
 
-    // Simulate a POST request
-    std::string postUrl = "/cgi-bin/test.py";
-    std::string postMethod = "POST";
-    std::string postBody = "name=Johnny&age=30";  // POST sends data in the body
+//     // Simulate a POST request
+//     std::string postUrl = "/cgi-bin/test.py";
+//     std::string postMethod = "POST";
+//     std::string postBody = "name=Johnny&age=30";  // POST sends data in the body
 
-    // Define CGI attributes (normally parsed from the configuration file)
-    std::string cgiBin = "/cgi-bin/";
-    std::string cgiRoot = "/var/www/cgi-bin/";  // Relative path
-    std::vector<std::string> cgiExtensions;
-    cgiExtensions.push_back(".py");
+//     // Define CGI attributes (normally parsed from the configuration file)
+//     std::string cgiBin = "/cgi-bin/";
+//     std::string cgiRoot = "/var/www/cgi-bin/";  // Relative path
+//     std::vector<std::string> cgiExtensions;
+//     cgiExtensions.push_back(".py");
 
-    // Instantiate the Cgi class
-    Cgi cgiHandler(cgiBin, cgiRoot, cgiExtensions);
+//     // Instantiate the Cgi class
+//     Cgi cgiHandler(cgiBin, cgiRoot, cgiExtensions);
 
-    // Handling GET request
-    std::cout << "----- Handling GET Request -----" << std::endl;
-    if (cgiHandler.isCgiRequest(getUrl)) {
-        cgiHandler.setMethod(getMethod);
+//     // Handling GET request
+//     std::cout << "----- Handling GET Request -----" << std::endl;
+//     if (cgiHandler.isCgiRequest(getUrl)) {
+//         cgiHandler.setMethod(getMethod);
 
-        std::string scriptPath = getUrl.substr(cgiBin.length(), getUrl.find('?') - cgiBin.length());
-        cgiHandler.setScriptPath(scriptPath);  // Extract path info without query string
+//         std::string scriptPath = getUrl.substr(cgiBin.length(), getUrl.find('?') - cgiBin.length());
+//         cgiHandler.setScriptPath(scriptPath);  // Extract path info without query string
 
-        // Prepare environment variables (e.g., QUERY_STRING for GET)
-        std::string queryString = getUrl.substr(getUrl.find('?') + 1);
-        cgiHandler.prepareEnvVars(queryString);
+//         // Prepare environment variables (e.g., QUERY_STRING for GET)
+//         std::string queryString = getUrl.substr(getUrl.find('?') + 1);
+//         cgiHandler.prepareEnvVars(queryString);
 
-        // Execute the CGI script and get the output
-        try {
-            std::string getResponse = cgiHandler.execute();
-            std::cout << "CGI Script Output (GET):\n" << getResponse << std::endl;
-        } catch (const std::exception &e) {
-            std::cerr << "Error executing CGI script: " << e.what() << std::endl;
-        }
-    } else {
-        std::cout << "Not a CGI request." << std::endl;
-    }
+//         // Execute the CGI script and get the output
+//         try {
+//             std::string getResponse = cgiHandler.execute();
+//             std::cout << "CGI Script Output (GET):\n" << getResponse << std::endl;
+//         } catch (const std::exception &e) {
+//             std::cerr << "Error executing CGI script: " << e.what() << std::endl;
+//         }
+//     } else {
+//         std::cout << "Not a CGI request." << std::endl;
+//     }
 
 // std::cout << "----- Handling GET Request -----" << std::endl;
 // if (cgiHandler.isCgiRequest(getUrl)) {
@@ -183,26 +183,26 @@ int main() {
 // }
 
     // Handling POST request
-    std::cout << "\n----- Handling POST Request -----" << std::endl;
-    if (cgiHandler.isCgiRequest(postUrl)) {
-        cgiHandler.setMethod(postMethod);
-        cgiHandler.setScriptPath(postUrl.substr(cgiBin.length()));  // Extract path info
-        cgiHandler.setBody(postBody);
+//     std::cout << "\n----- Handling POST Request -----" << std::endl;
+//     if (cgiHandler.isCgiRequest(postUrl)) {
+//         cgiHandler.setMethod(postMethod);
+//         cgiHandler.setScriptPath(postUrl.substr(cgiBin.length()));  // Extract path info
+//         cgiHandler.setBody(postBody);
 
-        // Prepare environment variables (no QUERY_STRING for POST)
-        cgiHandler.prepareEnvVars("");
+//         // Prepare environment variables (no QUERY_STRING for POST)
+//         cgiHandler.prepareEnvVars("");
 
-        // Execute the CGI script and get the output
-        try {
-            std::string postResponse = cgiHandler.execute();
-            std::cout << "CGI Script Output (POST):\n" << postResponse << std::endl;
-        } catch (const std::exception &e) {
-            std::cerr << "Error executing CGI script: " << e.what() << std::endl;
-        }
-    } else {
-        std::cout << "Not a CGI request." << std::endl;
-    }
+//         // Execute the CGI script and get the output
+//         try {
+//             std::string postResponse = cgiHandler.execute();
+//             std::cout << "CGI Script Output (POST):\n" << postResponse << std::endl;
+//         } catch (const std::exception &e) {
+//             std::cerr << "Error executing CGI script: " << e.what() << std::endl;
+//         }
+//     } else {
+//         std::cout << "Not a CGI request." << std::endl;
+//     }
 
-    return 0;
-}
+//     return 0;
+// }
 

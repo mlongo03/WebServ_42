@@ -45,6 +45,14 @@ Socket Client::getSocket() const {
     return socket;
 }
 
+std::string Client::getRequest() const {
+    return request;
+}
+
+std::string Client::getResponse() const {
+    return response;
+}
+
 void Client::setFd(int fd) {
     this->fd = fd;
 }
@@ -63,6 +71,14 @@ void Client::setServer(Server *server) {
 
 void Client::setSocket(Socket socket) {
     this->socket = socket;
+}
+
+void Client::setRequest(std::string request) {
+    this->request = request;
+}
+
+void Client::setResponse(std::string response) {
+    this->response = response;
 }
 
 bool Client::hasServer() const {

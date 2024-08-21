@@ -20,7 +20,7 @@ private:
     void createSocket(const Server& server);
     void handleNewConnection(Socket &socket);
     void handleClientData(Client &client);
-    void handleWritableData(int clientSocket);
+    void handleWritableData(Client &client);
     void closeSockets();
     void assignServerToClient(const Request& request, Client &client);
     bool isCompleteRequest(const std::string& request);

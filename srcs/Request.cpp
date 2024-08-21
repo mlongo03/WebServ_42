@@ -10,7 +10,6 @@ void Request::parseRequest(const std::string& rawRequest) {
     std::istringstream stream(rawRequest);
     std::string line;
 
-    // First line is the request line (method, path, HTTP version)
     std::getline(stream, line);
     std::istringstream requestLineStream(line);
     requestLineStream >> method >> path >> httpVersion;

@@ -5,6 +5,13 @@ Server::Server() :
 	host("0.0.0.0"),
 	listen("8080"),
 	index("index.html"), // default index if no index is specified in the location block
+	_error_page_400("400.html"),
+	_error_page_401("401.html"),
+	_error_page_403("403.html"),
+	_error_page_404("404.html"),
+	_error_page_500("500.html"),
+	_error_page_502("502.html"),
+	_error_page_503("503.html"),
 	_client_max_body_size("1000") // default client_max_body_size 1000 kilobytes (1000 * 1024 bytes)
 {}
 
