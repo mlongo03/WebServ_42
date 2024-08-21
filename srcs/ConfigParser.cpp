@@ -63,6 +63,9 @@ std::vector<Server> ConfigParser::parseServers(const std::vector<std::string> &l
 	Location currentLocation;
 	bool inServerBlock = false;
 	bool inLocationBlock = false;
+	// reset the counters
+	serverBlockCount = 0;
+	locationBlockCount = 0;
 
 	for (size_t i = 0; i < lines.size(); ++i)
 	{
@@ -82,12 +85,15 @@ std::vector<Server> ConfigParser::parseServers(const std::vector<std::string> &l
 		{
 			if (line == "server {")
 			{
-				// std::cout << "entered server block" << std::endl;
+				serverBlockCount++;
+				std::cout << "entered server block" << std::endl;
 				inServerBlock = true;
 				currentServer = Server();
 			}
 			else if (line.substr(0, 8) == "location") // Check if the line starts a location block
 			{
+				std::cout<< "entered location block " << std::endl;
+				locationBlockCount++;
 				inLocationBlock = true;
 				currentLocation = Location();
 
@@ -118,17 +124,22 @@ std::vector<Server> ConfigParser::parseServers(const std::vector<std::string> &l
 			}
 			else if (line == "}")
 			{
-
+				std::cout << "found a bracket closed" << std::endl;
 				if (inLocationBlock)
 				{
+					std::cout << "closing location block" << std::endl;
 					currentServer.addLocation(currentLocation); // Add the location to the server
 					inLocationBlock = false;
+					locationBlockCount--;
 				}
 				else if (inServerBlock)
 				{
+					std::cout << "closing server block" << std::endl;
 					servers.push_back(currentServer);
 					inServerBlock = false;
+					serverBlockCount--;
 				}
+
 			}
 			else
 			{
@@ -175,6 +186,7 @@ std::vector<Server> ConfigParser::parseServers(const std::vector<std::string> &l
  */
 void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool inLocationBlock, Server &currentServer, Location &currentLocation)
 {
+	std::cout << "in parsing line is: " << line << std::endl;
 	// Ignore comment lines
 	if (line.empty() || line[0] == '#')
 	{
@@ -217,7 +229,7 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 
 	if (inServerBlock && !inLocationBlock)
 	{
-
+		std::cout << "server block count " << serverBlockCount << std::endl;
 		if (key == "listen")
 		{
 			if (isValidNumber(value))
@@ -292,6 +304,7 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 	}
 	else if (inLocationBlock)
 	{
+		std::cout << "location block count " << locationBlockCount << std::endl;
 		if (key == "index")
 		{
 			currentLocation.setIndex(value);
@@ -342,13 +355,16 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 		}
 		else
 		{
+			std::cout << "test in loc block?" << std::endl;
 			throw std::runtime_error("Unknown key in location block: " + key);
 		}
 	}
 	else
 	{
+		std::cout << "test da nessuna parte?" << std::endl;
 		throw std::runtime_error("Line not in server block or location block");
 	}
+
 }
 
 

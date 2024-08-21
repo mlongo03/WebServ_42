@@ -17,6 +17,8 @@ class ConfigParser
 {
 private:
 	const char *filepath;
+	int serverBlockCount;
+	int locationBlockCount;
 
 public:
 	ConfigParser();

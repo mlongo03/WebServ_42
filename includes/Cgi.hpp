@@ -12,6 +12,7 @@
 #include <cstring>
 #include <sstream>
 #include <cstdio>
+#include <sstream>
 
 class Cgi {
 private:
@@ -40,9 +41,10 @@ public:
     // Convert map of environment variables to char* array for execve
     char **buildEnvArray();
 
-    // Execute the CGI script
     std::string execute();
 	std::string makeRelativePath(const std::string &path);
+	std::string check_correct_header(std::string &result);
+	std::string generateErrorResponse(int statusCode, const std::string& statusMessage, const std::string& errorMessage);
 };
 
 #endif

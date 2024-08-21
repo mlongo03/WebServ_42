@@ -34,6 +34,8 @@ private:
     std::string port;
     Socket socket;
     Server *server;
+	// std>>string request;
+	// std::string response;
 };
 
 std::ostream& operator<<(std::ostream& os, const Client& client);

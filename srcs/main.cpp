@@ -3,7 +3,7 @@
 #include "ConfigParser.hpp"
 #include "Utils.hpp"
 #include "Worker.hpp"
-#include "cgi.hpp"
+#include "Cgi.hpp"
 
 
 // int main(int argc, char **argv)
@@ -136,29 +136,6 @@ int main() {
     // Instantiate the Cgi class
     Cgi cgiHandler(cgiBin, cgiRoot, cgiExtensions);
 
-    // Handling GET request
-    std::cout << "----- Handling GET Request -----" << std::endl;
-    if (cgiHandler.isCgiRequest(getUrl)) {
-        cgiHandler.setMethod(getMethod);
-
-        std::string scriptPath = getUrl.substr(cgiBin.length(), getUrl.find('?') - cgiBin.length());
-        cgiHandler.setScriptPath(scriptPath);  // Extract path info without query string
-
-        // Prepare environment variables (e.g., QUERY_STRING for GET)
-        std::string queryString = getUrl.substr(getUrl.find('?') + 1);
-        cgiHandler.prepareEnvVars(queryString);
-
-        // Execute the CGI script and get the output
-        try {
-            std::string getResponse = cgiHandler.execute();
-            std::cout << "CGI Script Output (GET):\n" << getResponse << std::endl;
-        } catch (const std::exception &e) {
-            std::cerr << "Error executing CGI script: " << e.what() << std::endl;
-        }
-    } else {
-        std::cout << "Not a CGI request." << std::endl;
-    }
-
 // std::cout << "----- Handling GET Request -----" << std::endl;
 // if (cgiHandler.isCgiRequest(getUrl)) {
 //     cgiHandler.setMethod(getMethod);
@@ -174,7 +151,7 @@ int main() {
 //     // Execute the CGI script and get the output
 //     try {
 //         std::string getResponse = cgiHandler.execute();
-//         std::cout << "CGI Script Output (GET):\n" << getResponse << std::endl;
+//         std::cout << "CGI Script response - Output (GET):\n" << getResponse << std::endl;
 //     } catch (const std::exception &e) {
 //         std::cerr << "Error executing CGI script: " << e.what() << std::endl;
 //     }
@@ -195,7 +172,7 @@ int main() {
         // Execute the CGI script and get the output
         try {
             std::string postResponse = cgiHandler.execute();
-            std::cout << "CGI Script Output (POST):\n" << postResponse << std::endl;
+            std::cout << "CGI Script Response in Output (POST):\n" << postResponse << std::endl;
         } catch (const std::exception &e) {
             std::cerr << "Error executing CGI script: " << e.what() << std::endl;
         }
