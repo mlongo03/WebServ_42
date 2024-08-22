@@ -22,12 +22,10 @@ void Request::parseRequest(const std::string& rawRequest) {
     std::stringstream requestStream(rawRequest);
     std::string requestLine;
 
-    // Get the first line (the Request Line)
     if (!std::getline(requestStream, requestLine)) {
         throw InvalidHttpRequestException("Request line is missing");
     }
 
-    // Split the request line into method, URI, and HTTP version
     std::vector<std::string> parts = splitBySpaces(requestLine);
 
     if (parts.size() != 3) {
@@ -40,22 +38,18 @@ void Request::parseRequest(const std::string& rawRequest) {
 
     std::cout << "method = " << method << ", path = " << path << ", http version = " << httpVersion << std::endl;
 
-    // Validate method
     if (method != "GET" && method != "POST" && method != "DELETE") {
         throw InvalidHttpRequestException("Unsupported HTTP method: " + method);
     }
 
-    // Validate URI
     if (path.empty() || path[0] != '/') {
         throw InvalidHttpRequestException("Invalid or missing URI: " + path);
     }
 
-    // Validate HTTP version
     if (httpVersion != "HTTP/1.1") {
         throw InvalidHttpRequestException("Unsupported HTTP version: " + httpVersion);
     }
 
-    // Parse headers
     std::string headerLine;
     while (std::getline(requestStream, headerLine) && headerLine != "\r") {
         size_t delimiterPos = headerLine.find(":");
@@ -67,7 +61,6 @@ void Request::parseRequest(const std::string& rawRequest) {
         headers[headerName] = headerValue;
     }
 
-    // Parse body (if present)
     body = std::string(std::istreambuf_iterator<char>(requestStream), std::istreambuf_iterator<char>());
 }
 

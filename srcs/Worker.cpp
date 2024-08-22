@@ -228,6 +228,7 @@ void Worker::handleClientData(Client &client) {
             if (!client.hasServer()) {
                 assignServerToClient(request, client);
             }
+            client.setResponse(request.generateResponse());
         }
         catch (const InvalidHttpRequestException& e)
         {
