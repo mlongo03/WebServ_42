@@ -4,12 +4,14 @@ import os
 import sys
 
 def handle_get():
-    response_body = """
+    query_string = os.environ.get('QUERY_STRING', '')
+    response_body = f"""
 <html>
 <head><title>CGI GET Response</title></head>
 <body>
 <h1>Hello, World!</h1>
 <p>This is a response from a CGI script for a GET request.</p>
+<p>Received GET data: {query_string}</p>
 </body>
 </html>
 """

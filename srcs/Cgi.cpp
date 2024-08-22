@@ -1,9 +1,56 @@
 #include "Cgi.hpp"
 #include <limits.h>
 
-    // Constructor
+	Cgi::Cgi() {}
+
+	Cgi::Cgi(const Cgi &src) {
+		*this = src;
+	}
+
+	Cgi &Cgi::operator=(const Cgi &src) {
+		if (this != &src) {
+			cgiBin = src.cgiBin;
+			cgiRoot = src.cgiRoot;
+			cgiExtensions = src.cgiExtensions;
+			scriptPath = src.scriptPath;
+			method = src.method;
+			envVars = src.envVars;
+			body = src.body;
+		}
+		return *this;
+	}
+
+	Cgi::~Cgi() {}
+
+
    Cgi::Cgi(const std::string &cgiBinPath, const std::string &cgiRootPath, const std::vector<std::string> &extensions)
         : cgiBin(cgiBinPath), cgiRoot(cgiRootPath), cgiExtensions(extensions) {}
+
+	//getters
+	std::string Cgi::getScriptPath() const {
+		return scriptPath;
+	}
+
+	std::string Cgi::getMethod() const {
+		return method;
+	}
+
+	std::string Cgi::getBody() const {
+		return body;
+	}
+
+	std::map<std::string, std::string> Cgi::getEnvVars() const {
+		return envVars;
+	}
+
+	std::string Cgi::getCgiBin() const {
+		return cgiBin;
+	}
+
+	std::string Cgi::getCgiRoot() const {
+		return cgiRoot;
+	}
+
 
     // Setters for method, script path, and request body
     void Cgi::setMethod(const std::string &httpMethod) {
@@ -22,9 +69,13 @@
 
     // Check if the requested URL matches a CGI request
  bool Cgi::isCgiRequest(const std::string &url) {
+
+	 // Check if both '.' and '?' are present in the URL
+    if (url.find('.') == std::string::npos || url.find('?') == std::string::npos) {
+        return false;
+    }
     std::string scriptPath = url.substr(0, url.find('?')); // Remove query string if present
     std::string scriptExtension = scriptPath.substr(scriptPath.find_last_of("."));
-
     for (std::vector<std::string>::const_iterator it = cgiExtensions.begin(); it != cgiExtensions.end(); ++it) {
         if (scriptExtension == *it) {
             return true;
@@ -36,13 +87,13 @@
 void Cgi::prepareEnvVars(const std::string &queryString) {
     envVars["REQUEST_METHOD"] = method;
     envVars["SCRIPT_NAME"] = scriptPath;
-    envVars["QUERY_STRING"] = queryString;
     envVars["PATH_INFO"] = scriptPath;
+    envVars["QUERY_STRING"] = queryString;
 
     if (method == "POST") {
         std::ostringstream oss;
         oss << body.size();
-		std::cout << "content length in post is " << oss.str() << std::endl;
+		// std::cout << "content length in post is " << oss.str() << std::endl;
         envVars["CONTENT_LENGTH"] = oss.str();
     }
 }
@@ -52,7 +103,7 @@ void Cgi::prepareEnvVars(const std::string &queryString) {
         char **envArray = new char*[envVars.size() + 1];
         int i = 0;
 		for (std::map<std::string, std::string>::const_iterator it = envVars.begin(); it != envVars.end(); ++it) {
-			// std::cout << "env entry is " << it->first << " " << it->second << std::endl;
+			std::cout << "env entry is " << it->first << " " << it->second << std::endl;
 			std::string envEntry = it->first + "=" + it->second;
 			envArray[i] = new char[envEntry.size() + 1];
 			std::strcpy(envArray[i], envEntry.c_str());
@@ -89,7 +140,7 @@ std::string Cgi::execute() {
             if (written != static_cast<ssize_t>(body.size())) {
                 perror("Failed to write all POST data to the CGI script");
             }
-			std::cout << "body is " << body.c_str() << std::endl;
+			//std::cout << "body is " << body.c_str() << std::endl;
 
             // Redirect stdin to read from the input pipe
             dup2(inputPipe[0], STDIN_FILENO);
@@ -99,6 +150,12 @@ std::string Cgi::execute() {
         // Redirect stdout to write to the pipe
         dup2(pipefd[1], STDOUT_FILENO);
         close(pipefd[1]);  // Close write end of pipe after dup2
+
+		// Check if the script has execute permissions
+		// if (access(scriptPath.c_str(), X_OK) == -1) {
+		// 	perror("Script does not have execute permissions");
+		// 	exit(EXIT_FAILURE);
+		// }
 
         // Build arguments and environment for execve
         char *args[] = {const_cast<char*>(scriptPath.c_str()), NULL};

@@ -13,6 +13,7 @@
 #include <sstream>
 #include <cstdio>
 #include <sstream>
+#include "Utils.hpp"
 
 class Cgi {
 private:
@@ -25,9 +26,23 @@ private:
     std::string body;               // The body of the HTTP request (for POST)
 
 public:
-    // Constructor
+
+	Cgi();
+	Cgi(const Cgi &src);
+	Cgi &operator=(const Cgi &src);
+	~Cgi();
+
     Cgi(const std::string &cgiBinPath, const std::string &cgiRootPath, const std::vector<std::string> &extensions);
 
+	//getters
+	std::string getScriptPath() const;
+	std::string getMethod() const;
+	std::string getBody() const;
+	std::map<std::string, std::string> getEnvVars() const;
+	std::string getCgiBin() const;
+	std::string getCgiRoot() const;
+	std::vector<std::string> getCgiExtensions() const;
+	
     // Setters for method, script path, and request body
     void setMethod(const std::string &httpMethod);
     void setScriptPath(const std::string &path);
