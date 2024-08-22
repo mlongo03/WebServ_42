@@ -6,7 +6,9 @@
 #include "Epoll.hpp"
 #include "Client.hpp"
 #include "Request.hpp"
+#include "Response.hpp"
 #include "Socket.hpp"
+#include "Exception.hpp"
 
 class Worker {
 public:

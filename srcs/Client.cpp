@@ -8,11 +8,9 @@ Client::~Client() {
 Client::Client(int fd, std::string host, std::string port, Socket socket)
     : fd(fd), host(host), port(port), socket(socket), server(NULL){}
 
-Client::Client(int fd, std::string host, std::string port, Socket socket, Server *server)
-    : fd(fd), host(host), port(port), socket(socket), server(server) {}
-
-Client::Client(const Client &client)
-    : fd(client.fd), host(client.host), port(client.port), socket(client.socket), server(client.server) {}
+Client::Client(const Client &client) {
+    *this = client;
+}
 
 Client &Client::operator=(const Client &client) {
     if (this != &client) {
@@ -20,6 +18,8 @@ Client &Client::operator=(const Client &client) {
         host = client.host;
         port = client.port;
         socket = client.socket;
+        request = client.request;
+        response = client.response;
         server = client.server;
     }
     return *this;

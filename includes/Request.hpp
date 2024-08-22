@@ -3,6 +3,7 @@
 
 #include <string>
 #include <map>
+#include "Exception.hpp"
 
 class Request {
 public:

@@ -205,12 +205,12 @@ void Worker::assignServerToClient(const Request& request, Client &client) {
 
 void Worker::handleClientData(Client &client) {
     char buffer[BUFFER_LENGHT];
-    std::string request;
+    std::string rawRequest;
     int bytesRead;
 
     while ((bytesRead = recv(client.getFd(), buffer, sizeof buffer, 0)) > 0) {
-        request.append(buffer, bytesRead);
-        if (isCompleteRequest(request) || request.length() < BUFFER_LENGHT) {
+        rawRequest.append(buffer, bytesRead);
+        if (isCompleteRequest(rawRequest) || rawRequest.length() < BUFFER_LENGHT) {
             break;
         }
     }
@@ -221,19 +221,20 @@ void Worker::handleClientData(Client &client) {
         close(client.getFd());
         std::cout << "Connection closed on socket " << client.getFd() << std::endl;
     } else {
-        std::cout << "message got = " << request << std::endl;
-        if (!client.hasServer()) {
-            Request request1 = Request(request);
-
-            // if (request1.isValid()) {
-                assignServerToClient(request1, client);
-                // Further process the valid HTTP request
-            // } else {
-                // Handle non-HTTP or malformed request
-                std::cerr << "Received malformed or non-HTTP request: " << request << std::endl;
-                // Option 1: Send a 400 Bad Request response (if you want to treat it as HTTP)
-                client.setResponse("HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n");
-            // }
+        std::cout << "message got = " << rawRequest << std::endl;
+        try
+        {
+            Request request = Request(rawRequest);
+            if (!client.hasServer()) {
+                assignServerToClient(request, client);
+            }
+        }
+        catch (const InvalidHttpRequestException& e)
+        {
+            std::cerr << e.what() << std::endl;
+            Response response(400, "Bad Request");
+            response.setBodyFromFile("." + servers[0].getRoot() + servers[0].getErrorPage400());
+            client.setResponse(response.generateResponse());
         }
     }
 }

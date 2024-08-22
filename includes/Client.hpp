@@ -11,7 +11,6 @@ public:
     Client();
     ~Client();
     Client(int fd, std::string host, std::string port, Socket socket);
-    Client(int fd, std::string host, std::string port, Socket socket, Server *server);
 
     Client(const Client &client);
     Client &operator=(const Client &client);
@@ -40,7 +39,6 @@ private:
     Socket socket;
     std::string request;
     std::string response;
-    Response *responseHandler;
     Server *server;
 };
 
