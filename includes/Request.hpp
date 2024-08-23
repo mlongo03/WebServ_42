@@ -28,6 +28,10 @@ private:
 
     void parseRequest(const std::string& rawRequest);
     void parseHeaders(const std::string& headersPart);
+    void handleGetRequest(Server &server, Response &response) const;
+    void handlePostRequest(Server &server, Response &response) const;
+    void handleDeleteRequest(Server &server, Response &response) const;
+    void handleUnsupportedMethod(Server &server, Response &response) const;
 };
 
 #endif

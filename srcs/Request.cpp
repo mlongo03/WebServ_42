@@ -98,29 +98,72 @@ std::string Request::getBody() const {
     return body;
 }
 
-bool fileExists(const std::string& filename) {
-    struct stat buffer;
-    return (stat(filename.c_str(), &buffer) == 0);
+bool fileExistsAndAccessible(const std::string& filename, int mode) {
+    return (access(filename.c_str(), mode) == 0);
+}
+
+std::string determineContentType(const std::string &filePath) {
+    size_t dotPosition = filePath.find_last_of(".");
+    if (dotPosition != std::string::npos) {
+        std::string extension = filePath.substr(dotPosition + 1);
+        if (extension == "html" || extension == "htm") {
+            return "text/html";
+        } else if (extension == "jpg" || extension == "jpeg") {
+            return "image/jpeg";
+        } else if (extension == "png") {
+            return "image/png";
+        } else if (extension == "gif") {
+            return "image/gif";
+        } else if (extension == "css") {
+            return "text/css";
+        } else if (extension == "js") {
+            return "application/javascript";
+        }
+    }
+    return "application/octet-stream";
 }
 
 std::string Request::generateResponse(Server &server) const {
-
     Response response(200, "OK");
 
     if (method == "GET") {
-        std::string filePath = server.getRoot() + path;
-        if (fileExists(filePath)) {
-            std::ifstream file(filePath.c_str());
-            std::stringstream buffer;
-            buffer << file.rdbuf();
-            response.setBodyFromString(buffer.str());
-        } else {
-            response.setStatusCode(404);
-            response.setStatusMessage("Not Found");
-            response.setBodyFromFile(server.getRoot() + server.getErrorPage404());
-        }
+        handleGetRequest(server, response);
     } else if (method == "POST") {
-        std::string filePath = "uploads/uploaded_data.txt";
+        handlePostRequest(server, response);
+    } else if (method == "DELETE") {
+        handleDeleteRequest(server, response);
+    } else {
+        handleUnsupportedMethod(server, response);
+    }
+
+    return response.generateResponse();
+}
+
+void Request::handleGetRequest(Server &server, Response &response) const {
+    std::string filePath = server.getRoot() + path;
+
+    if (!fileExistsAndAccessible(filePath, F_OK)) {
+        response.setStatusCode(404);
+        response.setStatusMessage("Not Found");
+        response.setBodyFromFile(server.getRoot() + server.getErrorPage404());
+    } else if (!fileExistsAndAccessible(filePath, R_OK)) {
+        response.setStatusCode(403);
+        response.setStatusMessage("Forbidden");
+        response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
+    } else {
+        std::string contentType = determineContentType(filePath);
+        response.setHeader("Content-Type", contentType);
+        std::ifstream file(filePath.c_str(), std::ios::binary);
+        std::ostringstream buffer;
+        buffer << file.rdbuf();
+        response.setBodyFromString(buffer.str());
+    }
+}
+
+void Request::handlePostRequest(Server &server, Response &response) const {
+    std::string filePath = "uploads/uploaded_data.txt";
+
+    if (fileExistsAndAccessible(filePath, W_OK) || !fileExistsAndAccessible(filePath, F_OK)) {
         std::ofstream outFile(filePath.c_str());
         if (outFile) {
             outFile << body;
@@ -133,26 +176,38 @@ std::string Request::generateResponse(Server &server) const {
             response.setStatusMessage("Internal Server Error");
             response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
         }
-    } else if (method == "DELETE") {
-        std::string filePath = server.getRoot() + path;
-        if (fileExists(filePath)) {
-            if (remove(filePath.c_str()) == 0) {
-                response.setBodyFromString("<html><body><h1>200 OK</h1></body></html>");
-            } else {
-                response.setStatusCode(500);
-                response.setStatusMessage("Internal Server Error");
-                response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
-            }
-        } else {
-            response.setStatusCode(404);
-            response.setStatusMessage("Not Found");
-            response.setBodyFromFile(server.getRoot() + server.getErrorPage404());
-        }
     } else {
-        response.setStatusCode(405);
-        response.setStatusMessage("Method Not Allowed");
-        response.setBodyFromFile(server.getRoot() + server.getErrorPage405());
+        response.setStatusCode(403);
+        response.setStatusMessage("Forbidden");
+        response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
     }
-
-    return response.generateResponse();
 }
+
+void Request::handleDeleteRequest(Server &server, Response &response) const {
+    std::string filePath = server.getRoot() + path;
+
+    if (!fileExistsAndAccessible(filePath, F_OK)) {
+        response.setStatusCode(404);
+        response.setStatusMessage("Not Found");
+        response.setBodyFromFile(server.getRoot() + server.getErrorPage404());
+    } else if (!fileExistsAndAccessible(filePath, W_OK)) {
+        response.setStatusCode(403);
+        response.setStatusMessage("Forbidden");
+        response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
+    } else {
+        if (remove(filePath.c_str()) == 0) {
+            response.setBodyFromString("<html><body><h1>200 OK</h1></body></html>");
+        } else {
+            response.setStatusCode(500);
+            response.setStatusMessage("Internal Server Error");
+            response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
+        }
+    }
+}
+
+void Request::handleUnsupportedMethod(Server &server, Response &response) const {
+    response.setStatusCode(405);
+    response.setStatusMessage("Method Not Allowed");
+    response.setBodyFromFile(server.getRoot() + server.getErrorPage405());
+}
+
