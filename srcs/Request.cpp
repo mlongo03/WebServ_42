@@ -97,3 +97,62 @@ std::map<std::string, std::string> Request::getHeaders() const {
 std::string Request::getBody() const {
     return body;
 }
+
+bool fileExists(const std::string& filename) {
+    struct stat buffer;
+    return (stat(filename.c_str(), &buffer) == 0);
+}
+
+std::string Request::generateResponse(Server &server) const {
+
+    Response response(200, "OK");
+
+    if (method == "GET") {
+        std::string filePath = server.getRoot() + path;
+        if (fileExists(filePath)) {
+            std::ifstream file(filePath.c_str());
+            std::stringstream buffer;
+            buffer << file.rdbuf();
+            response.setBodyFromString(buffer.str());
+        } else {
+            response.setStatusCode(404);
+            response.setStatusMessage("Not Found");
+            response.setBodyFromFile(server.getRoot() + server.getErrorPage404());
+        }
+    } else if (method == "POST") {
+        std::string filePath = "uploads/uploaded_data.txt";
+        std::ofstream outFile(filePath.c_str());
+        if (outFile) {
+            outFile << body;
+            outFile.close();
+            response.setStatusCode(201);
+            response.setStatusMessage("Created");
+            response.setBodyFromString("<html><body><h1>201 Created</h1></body></html>");
+        } else {
+            response.setStatusCode(500);
+            response.setStatusMessage("Internal Server Error");
+            response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
+        }
+    } else if (method == "DELETE") {
+        std::string filePath = server.getRoot() + path;
+        if (fileExists(filePath)) {
+            if (remove(filePath.c_str()) == 0) {
+                response.setBodyFromString("<html><body><h1>200 OK</h1></body></html>");
+            } else {
+                response.setStatusCode(500);
+                response.setStatusMessage("Internal Server Error");
+                response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
+            }
+        } else {
+            response.setStatusCode(404);
+            response.setStatusMessage("Not Found");
+            response.setBodyFromFile(server.getRoot() + server.getErrorPage404());
+        }
+    } else {
+        response.setStatusCode(405);
+        response.setStatusMessage("Method Not Allowed");
+        response.setBodyFromFile(server.getRoot() + server.getErrorPage405());
+    }
+
+    return response.generateResponse();
+}

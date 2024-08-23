@@ -38,3 +38,15 @@ std::string Response::getDefaultErrorHtml() const {
 
     return html.str();
 }
+
+void Response::setStatusCode(int status) {
+    this->statusCode = status;
+}
+
+void Response::setStatusMessage(std::string statusMessage) {
+    this->statusMessage = statusMessage;
+}
+
+void Response::setBodyFromString(std::string body) {
+    this->body = body;
+}

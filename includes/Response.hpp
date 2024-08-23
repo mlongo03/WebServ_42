@@ -11,6 +11,9 @@ public:
     Response(int statusCode, const std::string& statusMessage);
     void setBodyFromFile(const std::string& filePath);
     std::string generateResponse() const;
+    void setStatusCode(int status);
+    void setStatusMessage(std::string statusMessage);
+    void setBodyFromString(std::string body);
 
 private:
     int statusCode;

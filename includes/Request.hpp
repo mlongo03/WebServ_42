@@ -4,6 +4,9 @@
 #include <string>
 #include <map>
 #include "Exception.hpp"
+#include "Server.hpp"
+#include "Response.hpp"
+#include <iostream>
 
 class Request {
 public:
@@ -14,6 +17,7 @@ public:
     std::string getHttpVersion() const;
     std::map<std::string, std::string> getHeaders() const;
     std::string getBody() const;
+    std::string generateResponse(Server &server) const;
 
 private:
     std::string method;

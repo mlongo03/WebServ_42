@@ -239,7 +239,7 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 		{
 			if (value[0] != '/')
 				throw std::runtime_error("value of root in server must start with /");
-			currentServer.setRoot(value);
+			currentServer.setRoot("." + value);
 		}
 		else if (key == "host")
 		{
@@ -278,6 +278,8 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 				currentServer.setErrorPage403(valueFromError);
 			else if (keyFromError == "404")
 				currentServer.setErrorPage404(valueFromError);
+			else if (keyFromError == "405")
+				currentServer.setErrorPage405(valueFromError);
 			else if (keyFromError == "500")
 				currentServer.setErrorPage500(valueFromError);
 			else if (keyFromError == "502")

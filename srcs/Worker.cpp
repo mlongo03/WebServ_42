@@ -228,13 +228,13 @@ void Worker::handleClientData(Client &client) {
             if (!client.hasServer()) {
                 assignServerToClient(request, client);
             }
-            client.setResponse(request.generateResponse());
+            client.setResponse(request.generateResponse(*client.getServer()));
         }
         catch (const InvalidHttpRequestException& e)
         {
             std::cerr << e.what() << std::endl;
             Response response(400, "Bad Request");
-            response.setBodyFromFile("." + servers[0].getRoot() + servers[0].getErrorPage400());
+            response.setBodyFromFile(servers[0].getRoot() + servers[0].getErrorPage400());
             client.setResponse(response.generateResponse());
         }
     }
