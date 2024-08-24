@@ -57,24 +57,46 @@
         method = httpMethod;
     }
 
-    void Cgi::setScriptPath(const std::string &path) {
-        scriptPath = cgiRoot + path;
-		scriptPath = makeRelativePath(scriptPath); // Remove leading '/'
-		// std::cout << "script path is " << scriptPath << std::endl;
-    }
+    // void Cgi::setScriptPath(const std::string &path) {
+    //     scriptPath = cgiRoot + path;
+	// 	scriptPath = makeRelativePath(scriptPath); // Remove leading '/'
+	// 	std::cout << "script path is " << scriptPath << std::endl;
+    // }
 
     void Cgi::setBody(const std::string &requestBody) {
         body = requestBody;
     }
 
+	void Cgi::setPath (const std::string &path)
+	{
+		scriptPath = path;
+	}
     // Check if the requested URL matches a CGI request
- bool Cgi::isCgiRequest(const std::string &url) {
+//  bool Cgi::isCgiRequest(const std::string &url) {
+// 	std::cout << "url is " << url << std::endl;
+// 	 // Check if both '.' and '?' are present in the URL
+//     if (url.find('.') == std::string::npos || url.find('?') == std::string::npos) {
+//         return false;
+//     }
+//     std::string scriptPath = url.substr(0, url.find('?')); // Remove query string if present
+//     std::string scriptExtension = scriptPath.substr(scriptPath.find_last_of("."));
+//     for (std::vector<std::string>::const_iterator it = cgiExtensions.begin(); it != cgiExtensions.end(); ++it) {
+//         if (scriptExtension == *it) {
+//             return true;
+//         }
+//     }
+//     return false;
+// }
 
-	 // Check if both '.' and '?' are present in the URL
-    if (url.find('.') == std::string::npos || url.find('?') == std::string::npos) {
+bool Cgi::isCgiRequest(const std::string &url) {
+    std::cout << "url is " << url << std::endl;
+    // Check if either '.' or '?' is present in the URL
+    if (url.find('.') == std::string::npos) {
+		std::cout << "url does not contain '.'" << std::endl;
         return false;
     }
     std::string scriptPath = url.substr(0, url.find('?')); // Remove query string if present
+	std::cout << "script path in iscgirequest is " << scriptPath << std::endl;
     std::string scriptExtension = scriptPath.substr(scriptPath.find_last_of("."));
     for (std::vector<std::string>::const_iterator it = cgiExtensions.begin(); it != cgiExtensions.end(); ++it) {
         if (scriptExtension == *it) {
@@ -84,17 +106,35 @@
     return false;
 }
 
-void Cgi::prepareEnvVars(const std::string &queryString) {
+// void Cgi::prepareEnvVars(const std::string &queryString) {
+//     envVars["REQUEST_METHOD"] = method;
+//     envVars["SCRIPT_NAME"] = scriptPath;
+//     envVars["PATH_INFO"] = scriptPath;
+//     envVars["QUERY_STRING"] = queryString;
+
+//     if (method == "POST") {
+//         std::ostringstream oss;
+//         oss << body.size();
+// 		std::cout << "body is " << body << std::endl;
+// 		// std::cout << "content length in post is " << oss.str() << std::endl;
+//         envVars["CONTENT_LENGTH"] = oss.str();
+//     }
+// }
+
+void Cgi::prepareEnvVars(const std::string &queryString, const std::string &postBody, const std::string &contentType) // we can add other thing like content type ecc but this has to be replaced from the parsed request
+{
     envVars["REQUEST_METHOD"] = method;
     envVars["SCRIPT_NAME"] = scriptPath;
     envVars["PATH_INFO"] = scriptPath;
-    envVars["QUERY_STRING"] = queryString;
-
-    if (method == "POST") {
+	if (method == "GET")
+    	envVars["QUERY_STRING"] = queryString;
+    if (method == "POST")
+	{
         std::ostringstream oss;
-        oss << body.size();
-		// std::cout << "content length in post is " << oss.str() << std::endl;
+        oss << postBody.size();
         envVars["CONTENT_LENGTH"] = oss.str();
+        envVars["CONTENT_TYPE"] = contentType;
+        body = postBody; // Store the POST body for later use
     }
 }
 
@@ -151,11 +191,6 @@ std::string Cgi::execute() {
         dup2(pipefd[1], STDOUT_FILENO);
         close(pipefd[1]);  // Close write end of pipe after dup2
 
-		// Check if the script has execute permissions
-		// if (access(scriptPath.c_str(), X_OK) == -1) {
-		// 	perror("Script does not have execute permissions");
-		// 	exit(EXIT_FAILURE);
-		// }
 
         // Build arguments and environment for execve
         char *args[] = {const_cast<char*>(scriptPath.c_str()), NULL};

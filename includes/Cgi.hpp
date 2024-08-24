@@ -42,16 +42,19 @@ public:
 	std::string getCgiBin() const;
 	std::string getCgiRoot() const;
 	std::vector<std::string> getCgiExtensions() const;
-	
+
     // Setters for method, script path, and request body
     void setMethod(const std::string &httpMethod);
     void setScriptPath(const std::string &path);
     void setBody(const std::string &requestBody);
+	void setPath (const std::string &path);
 
     // Check if the requested URL matches a CGI request
     bool isCgiRequest(const std::string &url);
     // Prepare environment variables for the CGI script
-    void prepareEnvVars(const std::string &pathInfo);
+    // void prepareEnvVars(const std::string &pathInfo);
+	// void prepareEnvVars(const std::string &queryString, const std::string &postBody);
+	void prepareEnvVars(const std::string &queryString, const std::string &postBody, const std::string &contentType);
 
     // Convert map of environment variables to char* array for execve
     char **buildEnvArray();
