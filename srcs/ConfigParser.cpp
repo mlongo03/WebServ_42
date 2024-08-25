@@ -86,17 +86,26 @@ std::vector<Server> ConfigParser::parseServers(const std::vector<std::string> &l
 			if (line == "server {")
 			{
 				serverBlockCount++;
-				std::cout << "entered server block" << std::endl;
+				if (inServerBlock)
+				{
+					throw std::runtime_error("Invalid server block");
+				}
 				inServerBlock = true;
 				currentServer = Server();
+				// if (serverBlockCount > 1) // check if there is more than one server block
+				// 	throw std::runtime_error("Invalid server block");
 			}
 			else if (line.substr(0, 8) == "location") // Check if the line starts a location block
 			{
-				std::cout<< "entered location block " << std::endl;
+				if (inLocationBlock)
+				{
+					throw std::runtime_error("Invalid location block");
+				}
 				locationBlockCount++;
 				inLocationBlock = true;
 				currentLocation = Location();
-
+				// if(locationBlockCount > 1) same condition
+				// 	throw std::runtime_error("Invalid location block");
 				size_t spacePos = line.find_first_of(" \t\n\r\f\v"); //changed to all kind of spaces
 				size_t openBracePos = line.find('{');
 				if (spacePos == std::string::npos)
@@ -124,22 +133,18 @@ std::vector<Server> ConfigParser::parseServers(const std::vector<std::string> &l
 			}
 			else if (line == "}")
 			{
-				std::cout << "found a bracket closed" << std::endl;
 				if (inLocationBlock)
 				{
-					std::cout << "closing location block" << std::endl;
 					currentServer.addLocation(currentLocation); // Add the location to the server
 					inLocationBlock = false;
 					locationBlockCount--;
 				}
 				else if (inServerBlock)
 				{
-					std::cout << "closing server block" << std::endl;
 					servers.push_back(currentServer);
 					inServerBlock = false;
 					serverBlockCount--;
 				}
-
 			}
 			else
 			{
@@ -157,7 +162,21 @@ std::vector<Server> ConfigParser::parseServers(const std::vector<std::string> &l
 			}
 			inServerBlock = false;
 			inLocationBlock = false;
+			locationBlockCount = 0;
+			serverBlockCount = 0;
 		}
+	}
+	// Error checking for unclosed blocks
+	try {
+		if (serverBlockCount != 0) {
+			throw std::runtime_error("Error: Unclosed server block(s) detected.");
+		}
+		if (locationBlockCount != 0) {
+			throw std::runtime_error("Error: Unclosed location block(s) detected.");
+		}
+	} catch (const std::exception& e) {
+		std::cerr << "Exception caught: " << e.what() << std::endl;
+		// Handle the exception here
 	}
 	return servers;
 }
@@ -186,7 +205,7 @@ std::vector<Server> ConfigParser::parseServers(const std::vector<std::string> &l
  */
 void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool inLocationBlock, Server &currentServer, Location &currentLocation)
 {
-	std::cout << "in parsing line is: " << line << std::endl;
+
 	// Ignore comment lines
 	if (line.empty() || line[0] == '#')
 	{
@@ -202,7 +221,6 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 	// Get the key and value of the Server from the line
 	std::string key = line.substr(0, spacePos);
 	std::string value = line.substr(spacePos + 1);
-
 	// trow error if value is empty
 	if (value.empty())
 	{
@@ -229,7 +247,6 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 
 	if (inServerBlock && !inLocationBlock)
 	{
-		std::cout << "server block count " << serverBlockCount << std::endl;
 		if (key == "listen")
 		{
 			if (isValidNumber(value))
@@ -304,7 +321,6 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 	}
 	else if (inLocationBlock)
 	{
-		std::cout << "location block count " << locationBlockCount << std::endl;
 		if (key == "index")
 		{
 			currentLocation.setIndex(value);
@@ -355,13 +371,11 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 		}
 		else
 		{
-			std::cout << "test in loc block?" << std::endl;
 			throw std::runtime_error("Unknown key in location block: " + key);
 		}
 	}
 	else
 	{
-		std::cout << "test da nessuna parte?" << std::endl;
 		throw std::runtime_error("Line not in server block or location block");
 	}
 
