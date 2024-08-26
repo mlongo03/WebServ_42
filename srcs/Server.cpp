@@ -33,6 +33,7 @@ Server& Server::operator=(const Server& rhs)
 		_error_page_502 = rhs._error_page_502;
 		_error_page_503 = rhs._error_page_503;
 		_client_max_body_size = rhs._client_max_body_size;
+		_cgi_extension = rhs._cgi_extension;
 	}
 		return *this;
 };
@@ -110,6 +111,9 @@ std::string Server::getClientMaxBodySize() const {
 	return _client_max_body_size;
 }
 
+std::vector<std::string> Server::getCgiExtension() const {
+	return _cgi_extension;
+}
 //setters methods
 
 
@@ -170,6 +174,10 @@ void Server::setClientMaxBodySize(const std::string& _client_max_body_size) {
 	this->_client_max_body_size = _client_max_body_size;
 }
 
+void Server::setCgiExtension(const std::vector<std::string>& _cgi_extension) {
+	this->_cgi_extension = _cgi_extension;
+}
+
 //overload the << operator to print the server object
 std::ostream& operator<<(std::ostream& os, const Server& server) {
 	os << "\nServer names: ";
@@ -182,6 +190,13 @@ std::ostream& operator<<(std::ostream& os, const Server& server) {
 	os << "  listen: |" << server.getListen() << "|" <<  "\n";
 	os << "  index: |" << server.getIndex() << "|" << "\n";
 	os << "  root: |" << server.getRoot() << "|" << "\n";
+
+	os << "  cgi_extension: ";
+	std::vector<std::string> cgiExtensions = server.getCgiExtension();
+	for (std::vector<std::string>::const_iterator it = cgiExtensions.begin(); it != cgiExtensions.end(); ++it) {
+		os << "|" << *it << "|";
+	}
+	os << "\n";
 	os << "  error_page_400: |" << server.getErrorPage400() << "|" << "\n";
 	os << "  error_page_401: |" << server.getErrorPage401() << "|" << "\n";
 	os << "  error_page_403: |" << server.getErrorPage403() << "|" << "\n";
@@ -190,7 +205,6 @@ std::ostream& operator<<(std::ostream& os, const Server& server) {
 	os << "  error_page_502: |" << server.getErrorPage502() << "|" << "\n";
 	os << "  error_page_503: |" << server.getErrorPage503() << "|" << "\n";
 	os << "  client_max_body_size: |" << server.getClientMaxBodySize() << "|" << "\n";
-
 	std::vector<Location> locations = server.getLocations();
 	for (std::vector<Location>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
 		os << *it << ' ';

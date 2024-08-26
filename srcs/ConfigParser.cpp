@@ -285,6 +285,20 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 			else
 				throw std::runtime_error("Invalid body size: " + value);
 		}
+		else if (key == "cgi_extension")
+		{
+			std::vector<std::string> cgi;
+			std::istringstream iss(value);
+			std::string token;
+			while (iss >> token)
+			{
+				if (hasValidExtension(token))
+					cgi.push_back(token);
+				else
+					throw std::runtime_error("Invalid file extension: " + token);
+			}
+			currentServer.setCgiExtension(cgi);
+		}
 		else if (key == "error_page")
 		{
 			size_t spacePosErr = value.find_first_of(" \t\n\r\f\v");

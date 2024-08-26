@@ -21,6 +21,7 @@ class Server {
 		std::string _error_page_502;
 		std::string _error_page_503;
 		std::string _client_max_body_size;
+		std::vector<std::string> _cgi_extension;
 
 		std::vector<Location> locations;
 
@@ -46,6 +47,7 @@ class Server {
 		std::string getErrorPage502() const;
 		std::string getErrorPage503() const;
 		std::string getClientMaxBodySize() const;
+		std::vector<std::string> getCgiExtension() const;
 		std::vector<Location> getLocations()const ;
 
 		//setters
@@ -62,6 +64,7 @@ class Server {
 		void setErrorPage502(const std::string& error_page_502);
 		void setErrorPage503(const std::string& error_page_503);
 		void setClientMaxBodySize(const std::string& client_max_body_size);
+		void setCgiExtension(const std::vector<std::string>& cgi_extension);
 		void addLocation(const Location& location);
 };
 	std::ostream& operator<<(std::ostream& os, const Server& server);
