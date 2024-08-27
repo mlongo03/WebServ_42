@@ -4,6 +4,7 @@
 Server::Server() :
 	host("0.0.0.0"),
 	listen("8080"),
+	root("./var/www"),
 	index("index.html"), // default index if no index is specified in the location block
 	_error_page_400("/error_page/400.html"),
 	_error_page_401("/error_page/401.html"),
@@ -14,7 +15,9 @@ Server::Server() :
 	_error_page_502("/error_page/502.html"),
 	_error_page_503("/error_page/503.html"),
 	_client_max_body_size("1000") // default client_max_body_size 1000 kilobytes (1000 * 1024 bytes)
-{}
+{
+	
+}
 
 Server::~Server()
 {}
@@ -37,7 +40,7 @@ Server& Server::operator=(const Server& rhs)
 		_error_page_401 = rhs._error_page_401;
 		_error_page_403 = rhs._error_page_403;
 		_error_page_404 = rhs._error_page_404;
-		_error_page_405 = rhs._error_page_404;
+		_error_page_405 = rhs._error_page_405;
 		_error_page_500 = rhs._error_page_500;
 		_error_page_502 = rhs._error_page_502;
 		_error_page_503 = rhs._error_page_503;

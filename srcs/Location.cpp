@@ -2,7 +2,7 @@
 
 Location::Location() : path("/"),
 					//    index("index.html"), // if no index is specified in the location block
-					   autoindex(false)
+					   autoindex(2)
 {}
 
 Location::~Location() {}
@@ -47,7 +47,7 @@ std::string Location::getPath() const
 	return path;
 }
 
-bool Location::getAutoindex() const
+int Location::getAutoindex() const
 {
 	return autoindex;
 }
@@ -74,7 +74,7 @@ void Location::setPath(const std::string &path)
 	this->path = path;
 }
 
-void Location::setAutoindex(bool autoindex)
+void Location::setAutoindex(int autoindex)
 {
 	this->autoindex = autoindex;
 }

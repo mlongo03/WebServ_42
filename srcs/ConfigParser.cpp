@@ -315,9 +315,9 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 		else if (key == "autoindex")
 		{
 			if (value == "on")
-				currentLocation.setAutoindex(true);
+				currentLocation.setAutoindex(1);
 			else if (value == "off")
-				currentLocation.setAutoindex(false);
+				currentLocation.setAutoindex(0);
 			else
 				throw std::runtime_error("Invalid value for autoindex: " + value);
 		}
@@ -325,7 +325,7 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 		{
 			if (value[0] != '/')
 				throw std::runtime_error("value of root in location must start with /");
-			currentLocation.setRoot(value);
+			currentLocation.setRoot("." + value);
 		}
 		else if (key == "cgi_extension")
 		{

@@ -1,9 +1,4 @@
 #include "Request.hpp"
-#include <sstream>
-#include <algorithm>
-#include <vector>
-#include <iostream>
-
 Request::Request(const std::string& rawRequest) {
     parseRequest(rawRequest);
 }
@@ -50,6 +45,14 @@ void Request::parseRequest(const std::string& rawRequest) {
         throw InvalidHttpRequestException("Unsupported HTTP version: " + httpVersion);
     }
 
+    // Handle query string parsing
+    size_t queryPos = path.find('?');
+    if (queryPos != std::string::npos) {
+        std::string queryString = path.substr(queryPos + 1);
+        parseQueryString(queryString);
+        path = path.substr(0, queryPos);
+    }
+
     std::string headerLine;
     while (std::getline(requestStream, headerLine) && headerLine != "\r") {
         size_t delimiterPos = headerLine.find(":");
@@ -74,6 +77,21 @@ void Request::parseHeaders(const std::string& headersPart) {
             std::string value = headerLine.substr(colonPos + 1);
             value.erase(0, value.find_first_not_of(' ')); // Trim leading spaces
             headers[key] = value;
+        }
+    }
+}
+
+void Request::parseQueryString(const std::string& queryString) {
+    std::stringstream ss(queryString);
+    std::string item;
+    while (std::getline(ss, item, '&')) {
+        size_t delimiterPos = item.find('=');
+        if (delimiterPos != std::string::npos) {
+            std::string key = item.substr(0, delimiterPos);
+            std::string value = item.substr(delimiterPos + 1);
+            queryParameters[key] = value;
+        } else {
+            queryParameters[item] = "";
         }
     }
 }
@@ -123,26 +141,104 @@ std::string determineContentType(const std::string &filePath) {
     return "application/octet-stream";
 }
 
+Location* Request::checkLocation(Server &server) const {
+    std::vector<Location> locations = server.getLocations();
+
+    for (size_t i = 0; i < locations.size(); i++) {
+        std::cout << "Request path : " << path << ", Location path : " << locations[i].getPath() << std::endl;
+        if (path.find(locations[i].getPath()) == 0) {
+            return new Location(locations[i]);
+        }
+    }
+
+    return NULL;
+}
+
+std::string Request::getFilePath(Location* location, Server server) const {
+    if (location) {
+        if (!location->getRoot().empty()) {
+            return location->getRoot() + path;
+        } else {
+            return server.getRoot() + path;
+        }
+    } else {
+        return server.getRoot() + path;
+    }
+}
+
+bool containsString(const std::vector<std::string>& vec, const std::string& str) {
+    return std::find(vec.begin(), vec.end(), str) != vec.end();
+}
+
 std::string Request::generateResponse(Server &server) const {
     Response response(200, "OK");
+    Location* location = NULL;
+    location = checkLocation(server);
+    std::string filePath = getFilePath(location, server);
 
-    if (method == "GET") {
-        handleGetRequest(server, response);
-    } else if (method == "POST") {
-        handlePostRequest(server, response);
-    } else if (method == "DELETE") {
-        handleDeleteRequest(server, response);
+    std::cout << "location found: " << *location;
+
+    //scommentare dopo il merge
+    // if (method == "GET" && (location != NULL ? (location->getAllow().size() == 0 ? containsString(server.getAllow(), "GET") : containsString(location->getAllow(), "GET")) : containsString(server.getAllow(), "GET"))) {
+    if (method == "GET" && (location != NULL ? (location->getAllow().size() == 0 ? true : containsString(location->getAllow(), "GET")) : true)) {
+        handleGetRequest(server, response, location, filePath);
+    // } else if (method == "POST" && (location != NULL ? (location->getAllow().size() == 0 ? containsString(server.getAllow(), "POST") : containsString(location->getAllow(), "POST")) : containsString(server.getAllow(), "POST"))) {
+    } else if (method == "POST" && (location != NULL ? (location->getAllow().size() == 0 ? true : containsString(location->getAllow(), "POST")) : true)) {
+        handlePostRequest(server, response, location, filePath);
+    // } else if (method == "DELETE" && (location != NULL ? (location->getAllow().size() == 0 ? containsString(server.getAllow(), "DELETE") : containsString(location->getAllow(), "DELETE")) : containsString(server.getAllow(), "POST"))) {
+    } else if (method == "DELETE" && (location != NULL ? (location->getAllow().size() == 0 ? true : containsString(location->getAllow(), "DELETE")) : true)) {
+        handleDeleteRequest(server, response, location, filePath);
     } else {
         handleUnsupportedMethod(server, response);
     }
-
+    if (location)
+        delete(location);
     return response.generateResponse();
 }
 
-void Request::handleGetRequest(Server &server, Response &response) const {
-    std::string filePath = server.getRoot() + path;
+bool isDirectory(const std::string &path) {
+    struct stat s;
+    if (stat(path.c_str(), &s) == 0) {
+        return s.st_mode & S_IFDIR;
+    }
+    return false;
+}
 
-    if (!fileExistsAndAccessible(filePath, F_OK)) {
+std::string Request::generateDirectoryListingHTML(const std::string &directoryPath) const {
+    std::ostringstream oss;
+    oss << "<html><body><h1>Directory listing for " << directoryPath << "</h1><ul>";
+
+    DIR *dir = opendir(directoryPath.c_str());
+    if (dir) {
+        struct dirent *entry;
+        while ((entry = readdir(dir)) != NULL) {
+            std::string name = entry->d_name;
+            if (name != "." && name != "..") {
+                oss << "<li><a href=\"" << path + "/"+ name << "\">" << name << "</a></li>";
+            }
+        }
+        closedir(dir);
+    }
+    oss << "</ul></body></html>";
+    return oss.str();
+}
+
+void Request::handleGetRequest(Server &server, Response &response, Location *location, std::string filePath) const {
+
+    std::cout << "complete file path : " << filePath << std::endl;
+    if (isDirectory(filePath)) {
+        //dopo merge scommentare
+        // if ((location != NULL ? (location->getAutoindex() == 2 ? server.getAutoindex() : location.getAutoindex()) : server.getAutoindex())) {
+        if ((location != NULL ? (location->getAutoindex() == 2 ? true : location->getAutoindex()) : true)) {
+            std::string directoryListingHTML = generateDirectoryListingHTML(filePath);
+            response.setBodyFromString(directoryListingHTML);
+            response.setHeader("Content-Type", "text/html");
+        } else {
+            response.setStatusCode(403);
+            response.setStatusMessage("Forbidden");
+            response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
+        }
+    } else if (!fileExistsAndAccessible(filePath, F_OK)) {
         response.setStatusCode(404);
         response.setStatusMessage("Not Found");
         response.setBodyFromFile(server.getRoot() + server.getErrorPage404());
@@ -160,11 +256,14 @@ void Request::handleGetRequest(Server &server, Response &response) const {
     }
 }
 
-void Request::handlePostRequest(Server &server, Response &response) const {
-    std::string filePath = "uploads/uploaded_data.txt";
 
-    if (fileExistsAndAccessible(filePath, W_OK) || !fileExistsAndAccessible(filePath, F_OK)) {
-        std::ofstream outFile(filePath.c_str());
+void Request::handlePostRequest(Server &server, Response &response, Location *location, std::string filePath) const {
+    (void)location; //remove the line after you start to use the variable
+    (void)filePath; //remove the line after you start to use the variable
+    std::string filePathOut = "uploads/uploaded_data.txt";
+
+    if (fileExistsAndAccessible(filePathOut, W_OK) || !fileExistsAndAccessible(filePathOut, F_OK)) {
+        std::ofstream outFile(filePathOut.c_str());
         if (outFile) {
             outFile << body;
             outFile.close();
@@ -183,8 +282,8 @@ void Request::handlePostRequest(Server &server, Response &response) const {
     }
 }
 
-void Request::handleDeleteRequest(Server &server, Response &response) const {
-    std::string filePath = server.getRoot() + path;
+void Request::handleDeleteRequest(Server &server, Response &response, Location *location, std::string filePath) const {
+    (void)location; //remove the line after you start to use the variable
 
     if (!fileExistsAndAccessible(filePath, F_OK)) {
         response.setStatusCode(404);
