@@ -178,15 +178,11 @@ std::string Request::generateResponse(Server &server) const {
 
     std::cout << "location found: " << *location;
 
-    //scommentare dopo il merge
-    // if (method == "GET" && (location != NULL ? (location->getAllow().size() == 0 ? containsString(server.getAllow(), "GET") : containsString(location->getAllow(), "GET")) : containsString(server.getAllow(), "GET"))) {
-    if (method == "GET" && (location != NULL ? (location->getAllow().size() == 0 ? true : containsString(location->getAllow(), "GET")) : true)) {
+    if (method == "GET" && (location != NULL ? (location->getAllow().size() == 0 ? containsString(server.getAllow(), "GET") : containsString(location->getAllow(), "GET")) : containsString(server.getAllow(), "GET"))) {
         handleGetRequest(server, response, location, filePath);
-    // } else if (method == "POST" && (location != NULL ? (location->getAllow().size() == 0 ? containsString(server.getAllow(), "POST") : containsString(location->getAllow(), "POST")) : containsString(server.getAllow(), "POST"))) {
-    } else if (method == "POST" && (location != NULL ? (location->getAllow().size() == 0 ? true : containsString(location->getAllow(), "POST")) : true)) {
+    } else if (method == "POST" && (location != NULL ? (location->getAllow().size() == 0 ? containsString(server.getAllow(), "POST") : containsString(location->getAllow(), "POST")) : containsString(server.getAllow(), "POST"))) {
         handlePostRequest(server, response, location, filePath);
-    // } else if (method == "DELETE" && (location != NULL ? (location->getAllow().size() == 0 ? containsString(server.getAllow(), "DELETE") : containsString(location->getAllow(), "DELETE")) : containsString(server.getAllow(), "POST"))) {
-    } else if (method == "DELETE" && (location != NULL ? (location->getAllow().size() == 0 ? true : containsString(location->getAllow(), "DELETE")) : true)) {
+    } else if (method == "DELETE" && (location != NULL ? (location->getAllow().size() == 0 ? containsString(server.getAllow(), "DELETE") : containsString(location->getAllow(), "DELETE")) : containsString(server.getAllow(), "POST"))) {
         handleDeleteRequest(server, response, location, filePath);
     } else {
         handleUnsupportedMethod(server, response);
@@ -214,7 +210,7 @@ std::string Request::generateDirectoryListingHTML(const std::string &directoryPa
         while ((entry = readdir(dir)) != NULL) {
             std::string name = entry->d_name;
             if (name != "." && name != "..") {
-                oss << "<li><a href=\"" << path + "/"+ name << "\">" << name << "</a></li>";
+                oss << "<li><a href=\"" << path + (path[path.size() -1] != '/' ? "/" : "") + name << "\">" << name << "</a></li>";
             }
         }
         closedir(dir);
@@ -227,9 +223,7 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
 
     std::cout << "complete file path : " << filePath << std::endl;
     if (isDirectory(filePath)) {
-        //dopo merge scommentare
-        // if ((location != NULL ? (location->getAutoindex() == 2 ? server.getAutoindex() : location.getAutoindex()) : server.getAutoindex())) {
-        if ((location != NULL ? (location->getAutoindex() == 2 ? true : location->getAutoindex()) : true)) {
+        if ((location != NULL ? (location->getAutoindex() == 2 ? server.getAutoindex() : location->getAutoindex()) : server.getAutoindex())) {
             std::string directoryListingHTML = generateDirectoryListingHTML(filePath);
             response.setBodyFromString(directoryListingHTML);
             response.setHeader("Content-Type", "text/html");
