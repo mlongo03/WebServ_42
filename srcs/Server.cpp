@@ -5,7 +5,8 @@ Server::Server() :
 	host("0.0.0.0"),
 	listen("8080"),
 	index("index.html"), // default index if no index is specified in the location block
-	_client_max_body_size("1000") // default client_max_body_size 1000 kilobytes (1000 * 1024 bytes)
+	_client_max_body_size("1000"), // default client_max_body_size 1000 kilobytes (1000 * 1024 bytes)
+	_autoindex(false) // default autoindex is off
 {}
 
 Server::~Server()
@@ -25,6 +26,7 @@ Server& Server::operator=(const Server& rhs)
 		root = rhs.root;
 		index = rhs.index;
 		locations = rhs.locations;
+		_autoindex = rhs._autoindex;
 		_error_page_400 = rhs._error_page_400;
 		_error_page_401 = rhs._error_page_401;
 		_error_page_403 = rhs._error_page_403;
@@ -34,6 +36,7 @@ Server& Server::operator=(const Server& rhs)
 		_error_page_503 = rhs._error_page_503;
 		_client_max_body_size = rhs._client_max_body_size;
 		_cgi_extension = rhs._cgi_extension;
+		_allow = rhs._allow;
 	}
 		return *this;
 };
@@ -114,6 +117,15 @@ std::string Server::getClientMaxBodySize() const {
 std::vector<std::string> Server::getCgiExtension() const {
 	return _cgi_extension;
 }
+
+bool Server::getAutoindex() const
+{
+	return _autoindex;
+}
+
+std::vector<std::string> Server::getAllow() const {
+	return _allow;
+}
 //setters methods
 
 
@@ -178,6 +190,15 @@ void Server::setCgiExtension(const std::vector<std::string>& _cgi_extension) {
 	this->_cgi_extension = _cgi_extension;
 }
 
+void Server::setAutoindex(bool autoindex)
+{
+	this->_autoindex = autoindex;
+}
+
+void Server::setAllow(const std::vector<std::string>& _allow) {
+	this->_allow = _allow;
+}
+
 //overload the << operator to print the server object
 std::ostream& operator<<(std::ostream& os, const Server& server) {
 	os << "\nServer names: ";
@@ -190,6 +211,15 @@ std::ostream& operator<<(std::ostream& os, const Server& server) {
 	os << "  listen: |" << server.getListen() << "|" <<  "\n";
 	os << "  index: |" << server.getIndex() << "|" << "\n";
 	os << "  root: |" << server.getRoot() << "|" << "\n";
+	os << "  autoindex: |" << (server.getAutoindex() == true ? "on" : "off") << "|" << "\n";
+
+	os << "  allow: ";
+	std::vector<std::string> allow = server.getAllow();
+	for (std::vector<std::string>::const_iterator it = allow.begin(); it != allow.end(); ++it) {
+		const std::string &name = *it;
+		os << "|" << name << "| ";
+	}
+	os << std::endl;
 
 	os << "  cgi_extension: ";
 	std::vector<std::string> cgiExtensions = server.getCgiExtension();

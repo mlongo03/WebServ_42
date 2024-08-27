@@ -7,29 +7,29 @@
 #include "Cgi.hpp"
 
 
-// int main(int argc, char **argv)
-// {
-// 	if (argc != 2)
-// 	{
-// 		std::cerr << "Usage: " << argv[0] << " <config_file>" << std::endl;
-// 		exit(EXIT_FAILURE);
-// 	}
-// 	else
-// 	{
-// 		try
-// 		{
-// 			ConfigParser configParser;
-// 			Worker worker = Worker(configParser.parseConfig(argv[1]));
-// 			worker.run();
-// 		}
-// 		catch (std::exception &e)
-// 		{
-// 			std::cerr << e.what() << std::endl;
-// 			exit(EXIT_FAILURE);
-// 		}
-// 	}
-// 	return 0;
-// }
+int main(int argc, char **argv)
+{
+	if (argc != 2)
+	{
+		std::cerr << "Usage: " << argv[0] << " <config_file>" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	else
+	{
+		try
+		{
+			ConfigParser configParser;
+			Worker worker = Worker(configParser.parseConfig(argv[1]));
+			worker.run();
+		}
+		catch (std::exception &e)
+		{
+			std::cerr << e.what() << std::endl;
+			exit(EXIT_FAILURE);
+		}
+	}
+	return 0;
+}
 
 
 // main for cgi
@@ -112,7 +112,7 @@
 
 
 // main for  various cgi
-int  main() {
+// int  main() {
 
     // Example raw HTTP request
 
@@ -150,30 +150,30 @@ int  main() {
 	//// test for a post request
 	////Define CGI attributes (normally parsed from the configuration file)
 
-	std::string root = "/var/www";
-	std::string cgiBin = "/cgi-bin/";
-    std::vector<std::string> cgiExtensions;
-    cgiExtensions.push_back(".py");
-    cgiExtensions.push_back(".pl");
+// 	std::string root = "/var/www";
+// 	std::string cgiBin = "/cgi-bin/";
+//     std::vector<std::string> cgiExtensions;
+//     cgiExtensions.push_back(".py");
+//     cgiExtensions.push_back(".pl");
 
-    Cgi cgiHandler = Cgi(cgiBin, cgiExtensions);
-
-
-	std::string path = "/cgi-bin/testPOST.py";
-	// std::string path = "/cgi-bin/empty.py"; // empty file with permission
-	// std::string path = "/cgi-bin/noPerm.py"; // script without permission
-
-	std::string method = "POST";
-	std::string body = "name=John&age=30";
-	std::string contentType = "application/x-www-form-urlencoded";
-
-	std::string response = cgiHandler.handleCgiRequest(cgiHandler, path, method,body,contentType,root);
-	std::cout << "### Response is: " << std::endl;
-	std::cout << response << std::endl;
-	std::cout << "###" << std::endl;
+//     Cgi cgiHandler = Cgi(cgiBin, cgiExtensions);
 
 
-    return 0;
-}
+// 	std::string path = "/cgi-bin/testPOST.py";
+// 	// std::string path = "/cgi-bin/empty.py"; // empty file with permission
+// 	// std::string path = "/cgi-bin/noPerm.py"; // script without permission
+
+// 	std::string method = "POST";
+// 	std::string body = "name=John&age=30";
+// 	std::string contentType = "application/x-www-form-urlencoded";
+
+// 	std::string response = cgiHandler.handleCgiRequest(cgiHandler, path, method,body,contentType,root);
+// 	std::cout << "### Response is: " << std::endl;
+// 	std::cout << response << std::endl;
+// 	std::cout << "###" << std::endl;
+
+
+//     return 0;
+// }
 
 

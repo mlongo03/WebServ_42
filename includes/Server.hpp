@@ -22,8 +22,12 @@ class Server {
 		std::string _error_page_503;
 		std::string _client_max_body_size;
 		std::vector<std::string> _cgi_extension;
+		bool _autoindex;
+		std::vector<std::string> _allow;
 
 		std::vector<Location> locations;
+
+
 
 	public:
 		Server();
@@ -49,6 +53,8 @@ class Server {
 		std::string getClientMaxBodySize() const;
 		std::vector<std::string> getCgiExtension() const;
 		std::vector<Location> getLocations()const ;
+		bool getAutoindex() const;
+		std::vector<std::string> getAllow() const;
 
 		//setters
 		void setServerNames(const std::vector<std::string>& server_names);
@@ -66,6 +72,8 @@ class Server {
 		void setClientMaxBodySize(const std::string& client_max_body_size);
 		void setCgiExtension(const std::vector<std::string>& cgi_extension);
 		void addLocation(const Location& location);
+		void setAutoindex(bool autoindex);
+		void setAllow(const std::vector<std::string>& allow);
 };
 	std::ostream& operator<<(std::ostream& os, const Server& server);
 

@@ -285,6 +285,29 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 			else
 				throw std::runtime_error("Invalid body size: " + value);
 		}
+		else if (key == "autoindex")
+		{
+			if (value == "on")
+				currentServer.setAutoindex(true);
+			else if (value == "off")
+				currentServer.setAutoindex(false);
+			else
+				throw std::runtime_error("Invalid value for autoindex: " + value);
+		}
+		else if (key == "allow")
+		{
+			std::vector<std::string> allows;
+			std::istringstream iss(value);
+			std::string token;
+			while (iss >> token)
+			{
+				if (isValidHttpMethod(token))
+					allows.push_back(token);
+				else
+					throw std::runtime_error("Invalid HTTP method: " + token);
+			}
+			currentServer.setAllow(allows);
+		}
 		else if (key == "cgi_extension")
 		{
 			std::vector<std::string> cgi;
