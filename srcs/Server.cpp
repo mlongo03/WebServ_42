@@ -7,7 +7,12 @@ Server::Server() :
 	index("index.html"), // default index if no index is specified in the location block
 	_client_max_body_size("1000"), // default client_max_body_size 1000 kilobytes (1000 * 1024 bytes)
 	_autoindex(false) // default autoindex is off
-{}
+{
+	// default allow methods are GET, POST, DELETE if now allow is specified
+	this->_allow.push_back("GET");
+	this->_allow.push_back("POST");
+	this->_allow.push_back("DELETE");
+}
 
 Server::~Server()
 {}

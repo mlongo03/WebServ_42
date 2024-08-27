@@ -2,7 +2,6 @@
 #include <limits.h>
 
 	Cgi::Cgi() {
-		std::cout << "Cgi constructor" << std::endl;
 	}
 
 	Cgi::Cgi(const Cgi &src) {
@@ -11,7 +10,6 @@
 
 	Cgi &Cgi::operator=(const Cgi &src) {
 		if (this != &src) {
-			cgiBin = src.cgiBin;
 			// cgiRoot = src.cgiRoot;
 			script_name = src.script_name;
 			cgiExtensions = src.cgiExtensions;
@@ -26,8 +24,8 @@
 	Cgi::~Cgi() {}
 
 
-   Cgi::Cgi(const std::string &cgiBinPath, const std::vector<std::string> &extensions)
-        : cgiBin(cgiBinPath), cgiExtensions(extensions) {}
+   Cgi::Cgi(const std::string &path , const std::vector<std::string> &extensions)
+        :path_info(path), cgiExtensions(extensions) {}
 
 	//getters
 	std::string Cgi::getScriptName() const {
@@ -46,9 +44,6 @@
 		return envVars;
 	}
 
-	std::string Cgi::getCgiBin() const {
-		return cgiBin;
-	}
 
 	std::vector<std::string> Cgi::getCgiExtensions() const {
 		return cgiExtensions;
@@ -61,12 +56,6 @@
 	std::string Cgi::getQueryString() const {
 		return query_string;
 	}
-
-
-
-	// std::string Cgi::getCgiRoot() const {
-	// 	return cgiRoot;
-	// }
 
 
     // Setters for method, script path, and request body
@@ -128,11 +117,11 @@ bool Cgi::isCgiRequest(const std::string &url) {
 void Cgi::prepareEnvVars( const std::string &postBody, const std::string &contentType) // we can add other thing like content type ecc but this has to be replaced from the parsed request
 {
     envVars["REQUEST_METHOD"] = method;
-    envVars["SCRIPT_NAME"] = script_name;
+    // envVars["SCRIPT_NAME"] = script_name;
     envVars["PATH_INFO"] = path_info;
 
 	if (method == "GET")
-    	envVars["QUERY_STRING"] = query_string;
+    	// envVars["QUERY_STRING"] = query_string;
     if (method == "POST")
 	{
         std::ostringstream oss;
@@ -309,46 +298,33 @@ void Cgi::extract_query_string(const std::string &path)
 	// std::cout << "query string is " << query_string << std::endl;
 }
 
-std::string Cgi::handleCgiRequest(Cgi &cgi, const std::string &path, const std::string &getMethod, const std::string &postBody, const std::string &contentType, const std::string &root)
+std::string Cgi::handleCgiRequest(Cgi &cgi, const std::string &method, const std::string &body, const std::string &contentType)
 {
-
-	extract_query_string(path);
+	// std::cout<< cgi.getPath_info() << std::endl;
+	// extract_query_string(path); // not necessary anymore
     // std::string postBody = "name=John&age=30";
-    if (cgi.isCgiRequest(path)) {
-		//set the method of the HTTP
-        cgi.setMethod(getMethod);
+    if (cgi.isCgiRequest(cgi.getPath_info())) {
+	// 	//set the method of the HTTP
+        cgi.setMethod(method);
+        // // Extract path info and query string
 
-        // Extract path info and query string
-        std::string scriptName = path.substr(cgi.cgiBin.length(), path.find('?') - cgiBin.length());
 
-		//set the script name
-		setScriptName(scriptName);
-        if (scriptName.empty()) {
-            return cgi.generateErrorResponse(404, "Not Found", "No script specified");
-        }
+		// //set the script name
+		// setScriptName(scriptName);
+        // if (scriptName.empty()) {
+        //     return cgi.generateErrorResponse(404, "Not Found", "No script specified");
+        // }
 
-        // Prepend the root + cgiBin to scriptPath to get the full path because acces need the relative path to the file for working
-        std::string fullScriptPath = root + cgi.cgiBin + scriptName;
-		fullScriptPath = cgi.makeRelativePath(fullScriptPath); // Remove leading '/'
-        // std::cout << "Full script path is " << fullScriptPath << std::endl;
-
-        // Check if the script exists
-        if (access(fullScriptPath.c_str(), F_OK) == -1) {
-            std::cerr << "Script does not exist: " << fullScriptPath << std::endl;
-            return cgi.generateErrorResponse(403, "Forbidden", "Script does not exist");
-        }
-
-        // Check if the script has execute permission
-        if (access(fullScriptPath.c_str(), X_OK) == -1) {
-            std::cerr << "Script has no execute permission: " << fullScriptPath << std::endl;
+        // // Check if the script has execute permission
+        if (access(cgi.getPath_info().c_str(), X_OK) == -1) {
+            std::cerr << "Script has no execute permission: " << cgi.getPath_info().c_str() << std::endl;
             return cgi.generateErrorResponse(403, "Forbidden", "Script has no execute permission");
         }
 
-		//now we can set the path_info to use the fullScrpiptPath
-        cgi.setPath_info(fullScriptPath);
+		// //now we can set the path_info to use the fullScrpiptPath
+        // cgi.setPath_info(fullScriptPath);
 
-        // cgi.prepareEnvVars(queryString, postBody,contentType);
-		cgi.prepareEnvVars( postBody,contentType);
+        cgi.prepareEnvVars( body, contentType);
 		// Execute the CGI script and get the output
 		try {
 			std::string getResponse = cgi.execute();
