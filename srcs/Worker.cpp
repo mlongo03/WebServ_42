@@ -222,6 +222,7 @@ void Worker::handleClientData(Client &client) {
             // Create Request object
             Request request1 = Request(request);
             assignServerToClient(request1, client);
+			// executeCgi(request1, client);
             // std::cout << "assigned server = " << *client.getServer() << std::endl;
         }
     }

@@ -99,7 +99,7 @@ std::ostream &operator<<(std::ostream &os, const Location &location)
 {
 	os << "    Location: |" << location.getPath() << "|" << std::endl;
 	os << "      index: |" << location.getIndex() << "|" << std::endl;
-	os << "      autoindex: |" << location.getAutoindex() << "|" << std::endl;
+	os << "      autoindex: |" <<( location.getAutoindex() == true ? "on" : "off" ) << "|" << std::endl;
 	os << "      root: |" << location.getRoot() << "|" << std::endl;
 
 	os << "      allow: ";
