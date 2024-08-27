@@ -30,6 +30,8 @@ Worker::Worker(const std::vector<Server>& servers) {
             std::cerr << e.what() << '\n';
         }
     }
+    if (listeningSockets.size() == 0)
+        throw std::runtime_error("No server can be started");
 
     int efd = eventfd(0, 0);
     if (efd == -1) {
@@ -76,7 +78,10 @@ void Worker::run()
                     }
                 }
                 if (events[i].events & EPOLLOUT) {
-                    handleWritableData(events[i].data.fd);
+                    // std::cout << "response sent = " << events[i].data.fd << std::endl;
+                    std::vector<Client>::iterator client = std::find(clientSockets.begin(), clientSockets.end(), events[i].data.fd);
+                    if (client != clientSockets.end())
+                        handleWritableData(*client);
                 }
             }
         }
@@ -102,7 +107,7 @@ void Worker::handleNewConnection(Socket &socket) {
         return;
     }
 
-    epollHandler.addFd(clientSocket, EPOLLIN);
+    epollHandler.addFd(clientSocket, EPOLLIN | EPOLLOUT);
     if (clientAddr.ss_family == AF_INET) {
         struct sockaddr_in *s = (struct sockaddr_in *)&clientAddr;
         inet_ntop(AF_INET, &s->sin_addr, clientIP, sizeof clientIP);
@@ -200,12 +205,12 @@ void Worker::assignServerToClient(const Request& request, Client &client) {
 
 void Worker::handleClientData(Client &client) {
     char buffer[BUFFER_LENGHT];
-    std::string request;
+    std::string rawRequest;
     int bytesRead;
 
     while ((bytesRead = recv(client.getFd(), buffer, sizeof buffer, 0)) > 0) {
-        request.append(buffer, bytesRead);
-        if (isCompleteRequest(request) || request.length() < BUFFER_LENGHT) {
+        rawRequest.append(buffer, bytesRead);
+        if (isCompleteRequest(rawRequest) || rawRequest.length() < BUFFER_LENGHT) {
             break;
         }
     }
@@ -216,22 +221,41 @@ void Worker::handleClientData(Client &client) {
         close(client.getFd());
         std::cout << "Connection closed on socket " << client.getFd() << std::endl;
     } else {
-        // Handle HTTP request and send response
-        std::cout << "message got = " << request << std::endl;
-        if (!client.hasServer()) {
-            // Create Request object
-            Request request1 = Request(request);
-            assignServerToClient(request1, client);
-			// executeCgi(request1, client);
-            // std::cout << "assigned server = " << *client.getServer() << std::endl;
+        std::cout << "message got = " << rawRequest << std::endl;
+        try
+        {
+            Request request = Request(rawRequest);
+            if (!client.hasServer()) {
+                assignServerToClient(request, client);
+            }
+            client.setResponse(request.generateResponse(*client.getServer()));
+        }
+        catch (const InvalidHttpRequestException& e)
+        {
+            std::cerr << e.what() << std::endl;
+            Response response(400, "Bad Request");
+            response.setBodyFromFile(servers[0].getRoot() + servers[0].getErrorPage400());
+            client.setResponse(response.generateResponse());
         }
     }
 }
 
-void Worker::handleWritableData(int clientSocket) {
-    (void)clientSocket;
-    // Implement how you want to handle writable events
-    // For example, you might have a buffer to write data to the socket
+void Worker::handleWritableData(Client &client) {
+
+    std::string response = client.getResponse();
+    int bytesSent = send(client.getFd(), response.c_str(), response.size(), 0);
+
+    if (bytesSent == -1) {
+        // Error occurred while sending
+        throw std::runtime_error("send error");
+    } else {
+        // std::cout << "response sent = " << response << std::endl;
+        response.erase(0, bytesSent);
+
+        if (response.empty()) {
+            client.setResponse("");
+        }
+    }
 }
 
 std::vector<Socket> Worker::getListeningSockets() const {

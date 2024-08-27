@@ -17,6 +17,7 @@ class Server {
 		std::string _error_page_401;
 		std::string _error_page_403;
 		std::string _error_page_404;
+		std::string _error_page_405;
 		std::string _error_page_500;
 		std::string _error_page_502;
 		std::string _error_page_503;
@@ -47,6 +48,7 @@ class Server {
 		std::string getErrorPage401() const;
 		std::string getErrorPage403() const;
 		std::string getErrorPage404() const;
+		std::string getErrorPage405() const;
 		std::string getErrorPage500() const;
 		std::string getErrorPage502() const;
 		std::string getErrorPage503() const;
@@ -66,6 +68,7 @@ class Server {
 		void setErrorPage401(const std::string& error_page_401);
 		void setErrorPage403(const std::string& error_page_403);
 		void setErrorPage404(const std::string& error_page_404);
+		void setErrorPage405(const std::string& error_page_404);
 		void setErrorPage500(const std::string& error_page_500);
 		void setErrorPage502(const std::string& error_page_502);
 		void setErrorPage503(const std::string& error_page_503);

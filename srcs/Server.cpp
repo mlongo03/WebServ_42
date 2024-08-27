@@ -4,11 +4,19 @@
 Server::Server() :
 	host("0.0.0.0"),
 	listen("8080"),
+	root("./var/www"),
 	index("index.html"), // default index if no index is specified in the location block
+	_error_page_400("/error_page/400.html"),
+	_error_page_401("/error_page/401.html"),
+	_error_page_403("/error_page/403.html"),
+	_error_page_404("/error_page/404.html"),
+	_error_page_405("/error_page/405.html"),
+	_error_page_500("/error_page/500.html"),
+	_error_page_502("/error_page/502.html"),
+	_error_page_503("/error_page/503.html"),
 	_client_max_body_size("1000"), // default client_max_body_size 1000 kilobytes (1000 * 1024 bytes)
-	_autoindex(false) // default autoindex is off
+  _autoindex(false)
 {
-	// default allow methods are GET, POST, DELETE if now allow is specified
 	this->_allow.push_back("GET");
 	this->_allow.push_back("POST");
 	this->_allow.push_back("DELETE");
@@ -36,6 +44,7 @@ Server& Server::operator=(const Server& rhs)
 		_error_page_401 = rhs._error_page_401;
 		_error_page_403 = rhs._error_page_403;
 		_error_page_404 = rhs._error_page_404;
+		_error_page_405 = rhs._error_page_405;
 		_error_page_500 = rhs._error_page_500;
 		_error_page_502 = rhs._error_page_502;
 		_error_page_503 = rhs._error_page_503;
@@ -101,6 +110,10 @@ std::string Server::getErrorPage403() const {
 
 std::string Server::getErrorPage404() const {
 	return _error_page_404;
+}
+
+std::string Server::getErrorPage405() const {
+	return _error_page_405;
 }
 
 std::string Server::getErrorPage500() const {
@@ -173,6 +186,10 @@ void Server::setErrorPage403(const std::string& _error_page_403) {
 
 void Server::setErrorPage404(const std::string& _error_page_404) {
 	this->_error_page_404 = _error_page_404;
+}
+
+void Server::setErrorPage405(const std::string& _error_page_405) {
+	this->_error_page_405 = _error_page_405;
 }
 
 void Server::setErrorPage500(const std::string& _error_page_500) {

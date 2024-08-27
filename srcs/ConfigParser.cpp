@@ -268,7 +268,7 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 		{
 			if (value[0] != '/')
 				throw std::runtime_error("value of root in server must start with /");
-			currentServer.setRoot(value);
+			currentServer.setRoot("." + value);
 		}
 		else if (key == "host")
 		{
@@ -344,6 +344,8 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 				currentServer.setErrorPage403(valueFromError);
 			else if (keyFromError == "404")
 				currentServer.setErrorPage404(valueFromError);
+			else if (keyFromError == "405")
+				currentServer.setErrorPage405(valueFromError);
 			else if (keyFromError == "500")
 				currentServer.setErrorPage500(valueFromError);
 			else if (keyFromError == "502")
@@ -379,9 +381,9 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 		else if (key == "autoindex")
 		{
 			if (value == "on")
-				currentLocation.setAutoindex(true);
+				currentLocation.setAutoindex(1);
 			else if (value == "off")
-				currentLocation.setAutoindex(false);
+				currentLocation.setAutoindex(0);
 			else
 				throw std::runtime_error("Invalid value for autoindex: " + value);
 		}
@@ -389,7 +391,7 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 		{
 			if (value[0] != '/')
 				throw std::runtime_error("value of root in location must start with /");
-			currentLocation.setRoot(value);
+			currentLocation.setRoot("." + value);
 		}
 		else if (key == "cgi_extension")
 		{

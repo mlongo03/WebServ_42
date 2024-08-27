@@ -3,21 +3,29 @@
 
 #include <string>
 #include <map>
+#include <fstream>
+#include <sstream>
+#include <iostream>
 
 class Response {
-public:
-    Response();
-
-    void setStatusCode(int code);
-    void setHeader(const std::string& key, const std::string& value);
-    void setBody(const std::string& body);
-
-    std::string toString() const;
-
 private:
     int statusCode;
-    std::map<std::string, std::string> headers;
+    std::string statusMessage;
     std::string body;
+    std::map<std::string, std::string> headers;
+
+public:
+    Response(int statusCode, const std::string& statusMessage);
+
+    void setStatusCode(int code);
+    void setStatusMessage(const std::string &message);
+    void setBodyFromString(const std::string &bodyContent);
+    void setBodyFromFile(const std::string &filePath);
+    void setHeader(const std::string &key, const std::string &value);
+    void setContentLength(size_t length);
+
+    std::string generateResponse() const;
+    void setDefaultErrorBody();
 };
 
 #endif

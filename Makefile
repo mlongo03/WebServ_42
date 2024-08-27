@@ -1,5 +1,7 @@
 NAME = webserv
 
+TESTING_FOLDER = var/www
+
 SRC = $(wildcard srcs/*.cpp)
 
 HDRS = $(wildcard includes/*.hpp)
@@ -27,11 +29,17 @@ obj/%.o: srcs/%.cpp
 	@mkdir -p $(@D)
 	@(c++ $(FLAGS) -c $< -o $@)
 
-$(NAME): $(OBJS) $(HDRS)
+$(NAME): $(OBJS) $(HDRS) permission_set
 	@(c++ $(FLAGS) $(OBJS) -o $(NAME))
 	@echo "$(GREEN)$(NAME) created!$(DEFAULT)"
 
-clean:
+permission_set:
+	@chmod 000 $(TESTING_FOLDER)/get_test/not_permission_file.txt
+
+permission_unset:
+	@chmod 777 $(TESTING_FOLDER)/get_test/not_permission_file.txt
+
+clean: permission_unset
 	@rm -f $(OBJS)
 	@echo "$(YELLOW)object files deleted!$(DEFAULT)"
 

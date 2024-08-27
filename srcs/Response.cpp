@@ -1,40 +1,65 @@
 #include "Response.hpp"
-#include <sstream>   // For std::ostringstream
-#include <cstdlib>   // For std::atoi
 
-Response::Response() : statusCode(200) {
-    headers["Content-Type"] = "text/plain";
+Response::Response(int code, const std::string &message)
+    : statusCode(code), statusMessage(message) {
+    setHeader("Content-Type", "text/html");
+    setHeader("Connection", "close");
 }
 
 void Response::setStatusCode(int code) {
     statusCode = code;
 }
 
-void Response::setHeader(const std::string& key, const std::string& value) {
+void Response::setStatusMessage(const std::string &message) {
+    statusMessage = message;
+}
+
+void Response::setBodyFromString(const std::string &bodyContent) {
+    body = bodyContent;
+    setContentLength(body.size());
+}
+
+void Response::setBodyFromFile(const std::string &filePath) {
+    std::ifstream file(filePath.c_str(), std::ios::binary);
+    if (file) {
+        std::ostringstream buffer;
+        buffer << file.rdbuf();
+        body = buffer.str();
+        setContentLength(body.size());
+    } else {
+        setDefaultErrorBody();
+    }
+}
+
+void Response::setContentLength(size_t length) {
+    std::stringstream ss;
+    ss << length;
+    setHeader("Content-Length", ss.str());
+}
+
+void Response::setHeader(const std::string &key, const std::string &value) {
     headers[key] = value;
 }
 
-void Response::setBody(const std::string& body) {
-    this->body = body;
-
-    // C++98 doesn't have std::to_string, so we use a stringstream instead
-    std::ostringstream oss;
-    oss << body.size();
-    headers["Content-Length"] = oss.str();
-}
-
-std::string Response::toString() const {
+std::string Response::generateResponse() const {
     std::ostringstream responseStream;
+    responseStream << "HTTP/1.1 " << statusCode << " " << statusMessage << "\r\n";
 
-    responseStream << "HTTP/1.1 " << statusCode << " OK\r\n";
-
-    // Iterate through the map and add headers to the response stream
-    for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it) {
+    std::map<std::string, std::string>::const_iterator it;
+    for (it = headers.begin(); it != headers.end(); ++it) {
         responseStream << it->first << ": " << it->second << "\r\n";
     }
 
-    responseStream << "\r\n" << body;
-
+    responseStream << "\r\n";
+    responseStream << body;
     return responseStream.str();
 }
 
+void Response::setDefaultErrorBody() {
+    std::ostringstream bodyStream;
+    bodyStream << "<html><head><title>" << statusCode << " " << statusMessage
+               << "</title></head><body><h1>" << statusCode << " " << statusMessage
+               << "</h1><p>Sorry, something went wrong.</p></body></html>";
+    body = bodyStream.str();
+    setContentLength(body.size());
+}
