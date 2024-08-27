@@ -44,6 +44,7 @@ private:
     Location* checkLocation(Server &server) const;
     std::string getFilePath(Location* location, Server server) const;
     void parseQueryString(const std::string& queryString); // New method to parse query strings
+    bool checkMethod(Location *location, std::string &methodToCheck) const;
 };
 
 #endif

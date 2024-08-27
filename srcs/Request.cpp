@@ -170,6 +170,10 @@ bool containsString(const std::vector<std::string>& vec, const std::string& str)
     return std::find(vec.begin(), vec.end(), str) != vec.end();
 }
 
+bool checkMethod(Location *location, std::string &methodToCheck) const {
+    return (method == methodToCheck && (location != NULL ? (location->getAllow().size() == 0 ? containsString(server.getAllow(), methodToCheck) : containsString(location->getAllow(), methodToCheck)) : containsString(server.getAllow(), methodToCheck)));
+}
+
 std::string Request::generateResponse(Server &server) const {
     Response response(200, "OK");
     Location* location = NULL;
@@ -178,11 +182,11 @@ std::string Request::generateResponse(Server &server) const {
 
     std::cout << "location found: " << *location;
 
-    if (method == "GET" && (location != NULL ? (location->getAllow().size() == 0 ? containsString(server.getAllow(), "GET") : containsString(location->getAllow(), "GET")) : containsString(server.getAllow(), "GET"))) {
+    if (checkMethod(location, "GET")) {
         handleGetRequest(server, response, location, filePath);
-    } else if (method == "POST" && (location != NULL ? (location->getAllow().size() == 0 ? containsString(server.getAllow(), "POST") : containsString(location->getAllow(), "POST")) : containsString(server.getAllow(), "POST"))) {
+    } else if (checkMethod(location, "POST")) {
         handlePostRequest(server, response, location, filePath);
-    } else if (method == "DELETE" && (location != NULL ? (location->getAllow().size() == 0 ? containsString(server.getAllow(), "DELETE") : containsString(location->getAllow(), "DELETE")) : containsString(server.getAllow(), "POST"))) {
+    } else if (checkMethod("DELETE")) {
         handleDeleteRequest(server, response, location, filePath);
     } else {
         handleUnsupportedMethod(server, response);
