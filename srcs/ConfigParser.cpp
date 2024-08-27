@@ -63,6 +63,9 @@ std::vector<Server> ConfigParser::parseServers(const std::vector<std::string> &l
 	Location currentLocation;
 	bool inServerBlock = false;
 	bool inLocationBlock = false;
+	// reset the counters
+	serverBlockCount = 0;
+	locationBlockCount = 0;
 
 	for (size_t i = 0; i < lines.size(); ++i)
 	{
@@ -82,15 +85,27 @@ std::vector<Server> ConfigParser::parseServers(const std::vector<std::string> &l
 		{
 			if (line == "server {")
 			{
-				// std::cout << "entered server block" << std::endl;
+				serverBlockCount++;
+				if (inServerBlock)
+				{
+					throw std::runtime_error("Invalid server block");
+				}
 				inServerBlock = true;
 				currentServer = Server();
+				// if (serverBlockCount > 1) // check if there is more than one server block
+				// 	throw std::runtime_error("Invalid server block");
 			}
 			else if (line.substr(0, 8) == "location") // Check if the line starts a location block
 			{
+				if (inLocationBlock)
+				{
+					throw std::runtime_error("Invalid location block");
+				}
+				locationBlockCount++;
 				inLocationBlock = true;
 				currentLocation = Location();
-
+				// if(locationBlockCount > 1) same condition
+				// 	throw std::runtime_error("Invalid location block");
 				size_t spacePos = line.find_first_of(" \t\n\r\f\v"); //changed to all kind of spaces
 				size_t openBracePos = line.find('{');
 				if (spacePos == std::string::npos)
@@ -118,16 +133,17 @@ std::vector<Server> ConfigParser::parseServers(const std::vector<std::string> &l
 			}
 			else if (line == "}")
 			{
-
 				if (inLocationBlock)
 				{
 					currentServer.addLocation(currentLocation); // Add the location to the server
 					inLocationBlock = false;
+					locationBlockCount--;
 				}
 				else if (inServerBlock)
 				{
 					servers.push_back(currentServer);
 					inServerBlock = false;
+					serverBlockCount--;
 				}
 			}
 			else
@@ -146,7 +162,21 @@ std::vector<Server> ConfigParser::parseServers(const std::vector<std::string> &l
 			}
 			inServerBlock = false;
 			inLocationBlock = false;
+			locationBlockCount = 0;
+			serverBlockCount = 0;
 		}
+	}
+	// Error checking for unclosed blocks
+	try {
+		if (serverBlockCount != 0) {
+			throw std::runtime_error("Error: Unclosed server block(s) detected.");
+		}
+		if (locationBlockCount != 0) {
+			throw std::runtime_error("Error: Unclosed location block(s) detected.");
+		}
+	} catch (const std::exception& e) {
+		std::cerr << "Exception caught: " << e.what() << std::endl;
+		// Handle the exception here
 	}
 	return servers;
 }
@@ -175,6 +205,7 @@ std::vector<Server> ConfigParser::parseServers(const std::vector<std::string> &l
  */
 void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool inLocationBlock, Server &currentServer, Location &currentLocation)
 {
+
 	// Ignore comment lines
 	if (line.empty() || line[0] == '#')
 	{
@@ -190,7 +221,6 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 	// Get the key and value of the Server from the line
 	std::string key = line.substr(0, spacePos);
 	std::string value = line.substr(spacePos + 1);
-
 	// trow error if value is empty
 	if (value.empty())
 	{
@@ -217,7 +247,6 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 
 	if (inServerBlock && !inLocationBlock)
 	{
-
 		if (key == "listen")
 		{
 			if (isValidNumber(value))
@@ -255,6 +284,43 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 				currentServer.setClientMaxBodySize(value);
 			else
 				throw std::runtime_error("Invalid body size: " + value);
+		}
+		else if (key == "autoindex")
+		{
+			if (value == "on")
+				currentServer.setAutoindex(true);
+			else if (value == "off")
+				currentServer.setAutoindex(false);
+			else
+				throw std::runtime_error("Invalid value for autoindex: " + value);
+		}
+		else if (key == "allow")
+		{
+			std::vector<std::string> allows;
+			std::istringstream iss(value);
+			std::string token;
+			while (iss >> token)
+			{
+				if (isValidHttpMethod(token))
+					allows.push_back(token);
+				else
+					throw std::runtime_error("Invalid HTTP method: " + token);
+			}
+			currentServer.setAllow(allows);
+		}
+		else if (key == "cgi_extension")
+		{
+			std::vector<std::string> cgi;
+			std::istringstream iss(value);
+			std::string token;
+			while (iss >> token)
+			{
+				if (hasValidExtension(token))
+					cgi.push_back(token);
+				else
+					throw std::runtime_error("Invalid file extension: " + token);
+			}
+			currentServer.setCgiExtension(cgi);
 		}
 		else if (key == "error_page")
 		{
@@ -351,6 +417,7 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 	{
 		throw std::runtime_error("Line not in server block or location block");
 	}
+
 }
 
 

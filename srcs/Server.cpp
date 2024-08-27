@@ -14,9 +14,12 @@ Server::Server() :
 	_error_page_500("/error_page/500.html"),
 	_error_page_502("/error_page/502.html"),
 	_error_page_503("/error_page/503.html"),
-	_client_max_body_size("1000") // default client_max_body_size 1000 kilobytes (1000 * 1024 bytes)
+	_client_max_body_size("1000"), // default client_max_body_size 1000 kilobytes (1000 * 1024 bytes)
+  _autoindex(false)
 {
-	
+	this->_allow.push_back("GET");
+	this->_allow.push_back("POST");
+	this->_allow.push_back("DELETE");
 }
 
 Server::~Server()
@@ -36,6 +39,7 @@ Server& Server::operator=(const Server& rhs)
 		root = rhs.root;
 		index = rhs.index;
 		locations = rhs.locations;
+		_autoindex = rhs._autoindex;
 		_error_page_400 = rhs._error_page_400;
 		_error_page_401 = rhs._error_page_401;
 		_error_page_403 = rhs._error_page_403;
@@ -45,6 +49,8 @@ Server& Server::operator=(const Server& rhs)
 		_error_page_502 = rhs._error_page_502;
 		_error_page_503 = rhs._error_page_503;
 		_client_max_body_size = rhs._client_max_body_size;
+		_cgi_extension = rhs._cgi_extension;
+		_allow = rhs._allow;
 	}
 		return *this;
 };
@@ -126,6 +132,18 @@ std::string Server::getClientMaxBodySize() const {
 	return _client_max_body_size;
 }
 
+std::vector<std::string> Server::getCgiExtension() const {
+	return _cgi_extension;
+}
+
+bool Server::getAutoindex() const
+{
+	return _autoindex;
+}
+
+std::vector<std::string> Server::getAllow() const {
+	return _allow;
+}
 //setters methods
 
 
@@ -190,6 +208,19 @@ void Server::setClientMaxBodySize(const std::string& _client_max_body_size) {
 	this->_client_max_body_size = _client_max_body_size;
 }
 
+void Server::setCgiExtension(const std::vector<std::string>& _cgi_extension) {
+	this->_cgi_extension = _cgi_extension;
+}
+
+void Server::setAutoindex(bool autoindex)
+{
+	this->_autoindex = autoindex;
+}
+
+void Server::setAllow(const std::vector<std::string>& _allow) {
+	this->_allow = _allow;
+}
+
 //overload the << operator to print the server object
 std::ostream& operator<<(std::ostream& os, const Server& server) {
 	os << "\nServer names: ";
@@ -202,6 +233,22 @@ std::ostream& operator<<(std::ostream& os, const Server& server) {
 	os << "  listen: |" << server.getListen() << "|" <<  "\n";
 	os << "  index: |" << server.getIndex() << "|" << "\n";
 	os << "  root: |" << server.getRoot() << "|" << "\n";
+	os << "  autoindex: |" << (server.getAutoindex() == true ? "on" : "off") << "|" << "\n";
+
+	os << "  allow: ";
+	std::vector<std::string> allow = server.getAllow();
+	for (std::vector<std::string>::const_iterator it = allow.begin(); it != allow.end(); ++it) {
+		const std::string &name = *it;
+		os << "|" << name << "| ";
+	}
+	os << std::endl;
+
+	os << "  cgi_extension: ";
+	std::vector<std::string> cgiExtensions = server.getCgiExtension();
+	for (std::vector<std::string>::const_iterator it = cgiExtensions.begin(); it != cgiExtensions.end(); ++it) {
+		os << "|" << *it << "|";
+	}
+	os << "\n";
 	os << "  error_page_400: |" << server.getErrorPage400() << "|" << "\n";
 	os << "  error_page_401: |" << server.getErrorPage401() << "|" << "\n";
 	os << "  error_page_403: |" << server.getErrorPage403() << "|" << "\n";
@@ -210,7 +257,6 @@ std::ostream& operator<<(std::ostream& os, const Server& server) {
 	os << "  error_page_502: |" << server.getErrorPage502() << "|" << "\n";
 	os << "  error_page_503: |" << server.getErrorPage503() << "|" << "\n";
 	os << "  client_max_body_size: |" << server.getClientMaxBodySize() << "|" << "\n";
-
 	std::vector<Location> locations = server.getLocations();
 	for (std::vector<Location>::const_iterator it = locations.begin(); it != locations.end(); ++it) {
 		os << *it << ' ';

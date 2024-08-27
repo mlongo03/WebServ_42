@@ -40,6 +40,8 @@ private:
     std::string request;
     std::string response;
     Server *server;
+	// std>>string request;
+	// std::string response;
 };
 
 std::ostream& operator<<(std::ostream& os, const Client& client);
