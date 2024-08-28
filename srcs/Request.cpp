@@ -170,23 +170,22 @@ bool containsString(const std::vector<std::string>& vec, const std::string& str)
     return std::find(vec.begin(), vec.end(), str) != vec.end();
 }
 
-bool checkMethod(Location *location, std::string &methodToCheck) const {
+bool Request::checkMethod(Location *location, Server &server, const std::string& methodToCheck) const {
     return (method == methodToCheck && (location != NULL ? (location->getAllow().size() == 0 ? containsString(server.getAllow(), methodToCheck) : containsString(location->getAllow(), methodToCheck)) : containsString(server.getAllow(), methodToCheck)));
 }
 
 std::string Request::generateResponse(Server &server) const {
     Response response(200, "OK");
-    Location* location = NULL;
-    location = checkLocation(server);
+    Location* location = checkLocation(server);
     std::string filePath = getFilePath(location, server);
 
     std::cout << "location found: " << *location;
 
-    if (checkMethod(location, "GET")) {
+    if (checkMethod(location, server, "GET")) {
         handleGetRequest(server, response, location, filePath);
-    } else if (checkMethod(location, "POST")) {
+    } else if (checkMethod(location, server, "POST")) {
         handlePostRequest(server, response, location, filePath);
-    } else if (checkMethod("DELETE")) {
+    } else if (checkMethod(location, server, "DELETE")) {
         handleDeleteRequest(server, response, location, filePath);
     } else {
         handleUnsupportedMethod(server, response);
@@ -226,17 +225,24 @@ std::string Request::generateDirectoryListingHTML(const std::string &directoryPa
 void Request::handleGetRequest(Server &server, Response &response, Location *location, std::string filePath) const {
 
     std::cout << "complete file path : " << filePath << std::endl;
+
     if (isDirectory(filePath)) {
-        if ((location != NULL ? (location->getAutoindex() == 2 ? server.getAutoindex() : location->getAutoindex()) : server.getAutoindex())) {
+        if ((location != NULL ? (location->getIndex().empty() ? (server.getIndex().empty() ? false : true) : true) : (server.getIndex().empty() ? false : true))) {
+            filePath = filePath + (location != NULL ? (location->getIndex().empty() ? server.getIndex() : location->getIndex()) : server.getIndex());
+        } else if ((location != NULL ? (location->getAutoindex() == 2 ? server.getAutoindex() : location->getAutoindex()) : server.getAutoindex())) {
             std::string directoryListingHTML = generateDirectoryListingHTML(filePath);
             response.setBodyFromString(directoryListingHTML);
             response.setHeader("Content-Type", "text/html");
+            return;
         } else {
             response.setStatusCode(403);
             response.setStatusMessage("Forbidden");
             response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
+            return;
         }
-    } else if (!fileExistsAndAccessible(filePath, F_OK)) {
+    }
+
+    if (!fileExistsAndAccessible(filePath, F_OK)) {
         response.setStatusCode(404);
         response.setStatusMessage("Not Found");
         response.setBodyFromFile(server.getRoot() + server.getErrorPage404());
