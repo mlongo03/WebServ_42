@@ -230,6 +230,27 @@ std::string getIndex(Location *location, Server &server) {
     return (location != NULL ? (location->getIndex().empty() ? server.getIndex() : location->getIndex()) : server.getIndex());
 }
 
+bool checkAutoindexStatus(Location *location, Server &server) {
+    return (location != NULL ? (location->getAutoindex() == 2 ? server.getAutoindex() : location->getAutoindex()) : server.getAutoindex());
+}
+
+bool endsWithAny(const std::string& str, const std::vector<std::string>& suffixes) {
+    for (size_t i = 0; i < suffixes.size(); i++) {
+        if (str.size() >= suffixes[i].size() && str.rfind(suffixes[i]) == (str.size() - suffixes[i].size())) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool checkCgiMatch(Location *location, Server &server, std::string filePath) {
+    return (location != NULL ? (location->getCgiExtension().size() == 0 ? (server.getCgiExtension().size() == 0 ? false : endsWithAny(filePath, server.getCgiExtension())) : endsWithAny(filePath, location->getCgiExtension())) : (server.getCgiExtension().size() == 0 ? false : endsWithAny(filePath, server.getCgiExtension())));
+}
+
+std::vector<std::string> getCgiExtension(Location *location, Server &server) {
+    return (location != NULL ? (location->getCgiExtension().size() == 0 ? server.getCgiExtension() : location->getCgiExtension()) : server.getCgiExtension());
+}
+
 void Request::handleGetRequest(Server &server, Response &response, Location *location, std::string filePath) const {
 
     std::cout << "complete file path : " << filePath << std::endl;
@@ -237,7 +258,7 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
     if (isDirectory(filePath)) {
         if (checkIndexExistence(location, server)) {
             filePath = filePath + (filePath[filePath.size() - 1] != '/' ? "/" : "") + getIndex(location, server);
-        } else if ((location != NULL ? (location->getAutoindex() == 2 ? server.getAutoindex() : location->getAutoindex()) : server.getAutoindex())) {
+        } else if (checkAutoindexStatus(location, server)) {
             std::string directoryListingHTML = generateDirectoryListingHTML(filePath);
             response.setBodyFromString(directoryListingHTML);
             response.setHeader("Content-Type", "text/html");
@@ -258,6 +279,14 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
         response.setStatusCode(403);
         response.setStatusMessage("Forbidden");
         response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
+    } else if (checkCgiMatch(location, server, filePath)) {
+        std::cout << "file correct for the cgi: file = " << filePath << ", extensions = ";
+        std::vector<std::string> extensions = getCgiExtension(location, server);
+        for (size_t i = 0; i < extensions.size(); i++) {
+            std::cout << extensions[i] << ", ";
+        }
+        std::cout << std::endl;
+        //here you can call the cgi passing the Request object in this way (*this) and then passing the cgi_extensions in this way (getCgiExtension(location, server))
     } else {
         std::string contentType = determineContentType(filePath);
         response.setHeader("Content-Type", contentType);
