@@ -222,13 +222,21 @@ std::string Request::generateDirectoryListingHTML(const std::string &directoryPa
     return oss.str();
 }
 
+bool checkIndexExistence(Location *location, Server &server) {
+    return (location != NULL ? (location->getIndex().empty() ? (server.getIndex().empty() ? false : true) : true) : (server.getIndex().empty() ? false : true));
+}
+
+std::string getIndex(Location *location, Server &server) {
+    return (location != NULL ? (location->getIndex().empty() ? server.getIndex() : location->getIndex()) : server.getIndex());
+}
+
 void Request::handleGetRequest(Server &server, Response &response, Location *location, std::string filePath) const {
 
     std::cout << "complete file path : " << filePath << std::endl;
 
     if (isDirectory(filePath)) {
-        if ((location != NULL ? (location->getIndex().empty() ? (server.getIndex().empty() ? false : true) : true) : (server.getIndex().empty() ? false : true))) {
-            filePath = filePath + (location != NULL ? (location->getIndex().empty() ? server.getIndex() : location->getIndex()) : server.getIndex());
+        if (checkIndexExistence(location, server)) {
+            filePath = filePath + (filePath[filePath.size() - 1] != '/' ? "/" : "") + getIndex(location, server);
         } else if ((location != NULL ? (location->getAutoindex() == 2 ? server.getAutoindex() : location->getAutoindex()) : server.getAutoindex())) {
             std::string directoryListingHTML = generateDirectoryListingHTML(filePath);
             response.setBodyFromString(directoryListingHTML);
