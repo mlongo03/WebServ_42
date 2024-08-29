@@ -10,13 +10,13 @@
 
 	Cgi &Cgi::operator=(const Cgi &src) {
 		if (this != &src) {
-			// cgiRoot = src.cgiRoot;
 			script_name = src.script_name;
 			cgiExtensions = src.cgiExtensions;
 			path_info = src.path_info;
 			method = src.method;
 			envVars = src.envVars;
 			body = src.body;
+			queryParameters = src.queryParameters;
 		}
 		return *this;
 	}
@@ -53,10 +53,9 @@
 		return path_info;
 	}
 
-	std::string Cgi::getQueryString() const {
-		return query_string;
+	std::map<std::string, std::string> Cgi::getQueryParameters() const {
+		return queryParameters;
 	}
-
 
     // Setters for method, script path, and request body
     void Cgi::setMethod(const std::string &httpMethod) {
@@ -76,26 +75,10 @@
 		path_info = path;
 	}
 
-	void Cgi::setQueryString(const std::string &queryString) {
-		query_string = queryString;
+	void Cgi::setQueryParameters(const std::map<std::string, std::string> &params) {
+		queryParameters = params;
 	}
 
-    // Check if the requested URL matches a CGI request
-//  bool Cgi::isCgiRequest(const std::string &url) {
-// 	std::cout << "url is " << url << std::endl;
-// 	 // Check if both '.' and '?' are present in the URL
-//     if (url.find('.') == std::string::npos || url.find('?') == std::string::npos) {
-//         return false;
-//     }
-//     std::string scriptPath = url.substr(0, url.find('?')); // Remove query string if present
-//     std::string scriptExtension = scriptPath.substr(scriptPath.find_last_of("."));
-//     for (std::vector<std::string>::const_iterator it = cgiExtensions.begin(); it != cgiExtensions.end(); ++it) {
-//         if (scriptExtension == *it) {
-//             return true;
-//         }
-//     }
-//     return false;
-// }
 
 bool Cgi::isCgiRequest(const std::string &url) {
     // Check if either '.' or '?' is present in the URL
@@ -116,12 +99,17 @@ bool Cgi::isCgiRequest(const std::string &url) {
 
 void Cgi::prepareEnvVars( const std::string &postBody, const std::string &contentType) // we can add other thing like content type ecc but this has to be replaced from the parsed request
 {
-    envVars["REQUEST_METHOD"] = method;
-    // envVars["SCRIPT_NAME"] = script_name;
+    envVars["METHOD"] = method;
+    envVars["SCRIPT_NAME"] = script_name;
     envVars["PATH_INFO"] = path_info;
 
 	if (method == "GET")
-    	// envVars["QUERY_STRING"] = query_string;
+	{
+		for (std::map<std::string, std::string>::iterator it = queryParameters.begin(); it != queryParameters.end(); ++it)
+        {
+            envVars[it->first] = it->second;
+        }
+	}
     if (method == "POST")
 	{
         std::ostringstream oss;
@@ -147,7 +135,7 @@ void Cgi::prepareEnvVars( const std::string &postBody, const std::string &conten
         return envArray;
     }
 
-std::string Cgi::execute() {
+void Cgi::execute(Response &response, Server &server) {
     int pipefd[2];
     if (pipe(pipefd) == -1) {
         throw std::runtime_error("Failed to create pipe");
@@ -220,26 +208,25 @@ std::string Cgi::execute() {
         }
 
 		// std::cout << "result before check " << result << std::endl;
-		return check_correct_header(result);
-        return result;
+		if (check_correct_header(result, response, server)) {
+			response.setStatusCode(200);
+			response.setStatusMessage("OK");
+			response.setBodyFromString(getBodyFromResponse(result));
+		}
     }
 }
 
 
 
-std::string Cgi::makeRelativePath(const std::string &path) {
-    if (!path.empty() && path[0] == '/') {
-        return path.substr(1);  // Remove the leading '/'
-    }
-    return path;  // Return the path as-is if it doesn't start with '/'
-}
-
-std::string Cgi::check_correct_header(std::string &result) {
+bool Cgi::check_correct_header(std::string &result, Response &response, Server &server) {
     // Check if the result is empty
 	// std::cout << "result in check_correct header is: '" << result << "'" << std::endl;
     // std::cout << "result length: " << result.length() << std::endl;
     if (result.empty()) {
-        return generateErrorResponse(500, "Internal Server Error", "CGI script did not produce correct headers.");
+		response.setStatusCode(500);
+		response.setStatusMessage("Internal Server Error");
+		response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
+		return false;
     }
 
     // Check for headers
@@ -248,92 +235,105 @@ std::string Cgi::check_correct_header(std::string &result) {
     // Find the "Status" header
     size_t statusPos = result.find("Status: ");
     if (statusPos == std::string::npos) {
-        return generateErrorResponse(500, "Internal Server Error", "CGI script did not produce correct headers.");
+        response.setStatusCode(500);
+		response.setStatusMessage("Internal Server Error");
+		response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
+		return false;
     }
 
     // Extract the status line
     size_t statusEnd = result.find("\r\n", statusPos);
     if (statusEnd == std::string::npos) {
-        return generateErrorResponse(500, "Internal Server Error", "CGI script did not produce correct headers.");
+        response.setStatusCode(500);
+		response.setStatusMessage("Internal Server Error");
+		response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
+		return false;
     }
 
     std::string statusLine = result.substr(statusPos, statusEnd - statusPos);
 	// std::cout << "status line is " << statusLine << std::endl;
     // Check if the status is "200 OK"
     if (statusLine.find("200 OK") == std::string::npos) {
-        return generateErrorResponse(500, "Internal Server Error", "CGI script did not produce correct headers.");
+        response.setStatusCode(500);
+		response.setStatusMessage("Internal Server Error");
+		response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
+		return false;
     }
 
-    return result;
+    return true;
 }
 
-std::string Cgi::generateErrorResponse(int statusCode, const std::string& statusMessage, const std::string& errorMessage) {
-    // Construct the error body
-    std::stringstream ss;
-    ss << "<html><body><h1>" << statusCode << " " << statusMessage << "</h1>"
-       << "<p>" << errorMessage << "</p></body></html>";
-    std::string errorBody = ss.str();
+std::string Cgi::getBodyFromResponse(const std::string& response) {
+    std::string::size_type pos = response.find("\r\n\r\n");
 
-    // Convert the content length to a string using stringstream
-    std::stringstream contentLengthStream;
-    contentLengthStream << errorBody.size();
-    std::string contentLengthStr = contentLengthStream.str();
-
-    // Construct the error response
-    std::stringstream responseStream;
-    responseStream << "HTTP/1.1 " << statusCode << " " << statusMessage << "\r\n"
-                   << "Content-Type: text/html\r\n"
-                   << "Content-Length: " << contentLengthStr << "\r\n\r\n"
-                   << errorBody;
-    return responseStream.str();
+    if (pos != std::string::npos) {
+        return response.substr(pos + 4);
+    } else {
+        // If there's no header or if it's not formatted correctly, return the whole response
+        return response;
+    }
 }
 
-void Cgi::extract_query_string(const std::string &path)
-{
-	size_t pos = path.find('?');
-	if (pos != std::string::npos)
-	{
-		query_string = path.substr(pos + 1);
-	}
-	// std::cout << "query string is " << query_string << std::endl;
-}
 
-std::string Cgi::handleCgiRequest(Cgi &cgi, const std::string &method, const std::string &body, const std::string &contentType)
-{
-	// std::cout<< cgi.getPath_info() << std::endl;
-	// extract_query_string(path); // not necessary anymore
-    // std::string postBody = "name=John&age=30";
-    if (cgi.isCgiRequest(cgi.getPath_info())) {
-	// 	//set the method of the HTTP
-        cgi.setMethod(method);
-        // // Extract path info and query string
+void Cgi::extract_script_name(const std::string &path){
+    size_t lastSlashPos = path.find_last_of('/');
+    size_t queryPos = path.find('?');
 
-
-		// //set the script name
-		// setScriptName(scriptName);
-        // if (scriptName.empty()) {
-        //     return cgi.generateErrorResponse(404, "Not Found", "No script specified");
-        // }
-
-        // // Check if the script has execute permission
-        if (access(cgi.getPath_info().c_str(), X_OK) == -1) {
-            std::cerr << "Script has no execute permission: " << cgi.getPath_info().c_str() << std::endl;
-            return cgi.generateErrorResponse(403, "Forbidden", "Script has no execute permission");
+    if (lastSlashPos != std::string::npos)
+    {
+        if (queryPos != std::string::npos)
+        {
+            // If there's a query string, extract the part between the last slash and the question mark
+            script_name = path.substr(lastSlashPos + 1, queryPos - lastSlashPos - 1);
         }
-
-		// //now we can set the path_info to use the fullScrpiptPath
-        // cgi.setPath_info(fullScriptPath);
-
-        cgi.prepareEnvVars( body, contentType);
-		// Execute the CGI script and get the output
-		try {
-			std::string getResponse = cgi.execute();
-			// std::cout << getResponse << std::endl;
-			return getResponse;
-		} catch (const std::exception &e) {
-			std::cerr << "Error executing CGI script: " << e.what() << std::endl;
-			return cgi.generateErrorResponse(500, "Internal Server Error", "Error executing CGI script");
-		}
-	}
-	return cgi.generateErrorResponse(404, "Not Found", "Not a CGI request");
+        else
+        {
+            // If there's no query string, extract the part after the last slash
+            script_name = path.substr(lastSlashPos + 1);
+        }
+    }
+    else
+    {
+        script_name = path;
+    }
 }
+
+// std::string Cgi::handleCgiRequest(Cgi &cgi, const std::string &method, const std::string &body, const std::string &contentType)
+// {
+// 	// std::cout<< cgi.getPath_info() << std::endl;
+// 	// extract_query_string(path); // not necessary anymore
+//     // std::string postBody = "name=John&age=30";
+//     if (cgi.isCgiRequest(cgi.getPath_info())) {
+// 	// 	//set the method of the HTTP
+//         cgi.setMethod(method);
+//         // // Extract path info and query string
+
+
+// 		// //set the script name
+// 		// setScriptName(scriptName);
+//         // if (scriptName.empty()) {
+//         //     return cgi.generateErrorResponse(404, "Not Found", "No script specified");
+//         // }
+
+//         // // Check if the script has execute permission
+//         if (access(cgi.getPath_info().c_str(), X_OK) == -1) {
+//             std::cerr << "Script has no execute permission: " << cgi.getPath_info().c_str() << std::endl;
+//             return cgi.generateErrorResponse(403, "Forbidden", "Script has no execute permission");
+//         }
+
+// 		// //now we can set the path_info to use the fullScrpiptPath
+//         // cgi.setPath_info(fullScriptPath);
+
+//         cgi.prepareEnvVars( body, contentType);
+// 		// Execute the CGI script and get the output
+// 		try {
+// 			std::string getResponse = cgi.execute();
+// 			// std::cout << getResponse << std::endl;
+// 			return getResponse;
+// 		} catch (const std::exception &e) {
+// 			std::cerr << "Error executing CGI script: " << e.what() << std::endl;
+// 			return cgi.generateErrorResponse(500, "Internal Server Error", "Error executing CGI script");
+// 		}
+// 	}
+// 	return cgi.generateErrorResponse(404, "Not Found", "Not a CGI request");
+// }

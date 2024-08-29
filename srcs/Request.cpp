@@ -179,7 +179,7 @@ std::string Request::generateResponse(Server &server) const {
     Location* location = checkLocation(server);
     std::string filePath = getFilePath(location, server);
 
-    std::cout << "location found: " << *location;
+    // std::cout << "location found: " << *location;
 
     if (checkMethod(location, server, "GET")) {
         handleGetRequest(server, response, location, filePath);
@@ -286,7 +286,27 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
             std::cout << extensions[i] << ", ";
         }
         std::cout << std::endl;
-        //here you can call the cgi passing the Request object in this way (*this) and then passing the cgi_extensions in this way (getCgiExtension(location, server))
+
+	if (!fileExistsAndAccessible(filePath, X_OK))
+	{
+		std::cerr << "Script has no execute permission: " << std::endl;
+		response.setStatusCode(403);
+		response.setStatusMessage("Forbidden, Script has no execute permission");
+		response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
+	}
+	else
+	{
+		Cgi cgiHandler(filePath, extensions);
+		cgiHandler.setMethod(method);
+		cgiHandler.setPath_info(filePath);
+		cgiHandler.extract_script_name(filePath);
+		cgiHandler.setQueryParameters(queryParameters);
+		std::string contentType = determineContentType(filePath);
+		// std::cout << "content type is " << contentType << std::endl;
+		cgiHandler.prepareEnvVars(body, contentType);
+		cgiHandler.execute(response, server);
+	}
+    //here you can call the cgi passing the Request object in this way (*this) and then passing the cgi_extensions in this way (getCgiExtension(location, server))
     } else {
         std::string contentType = determineContentType(filePath);
         response.setHeader("Content-Type", contentType);
@@ -351,3 +371,7 @@ void Request::handleUnsupportedMethod(Server &server, Response &response) const 
     response.setBodyFromFile(server.getRoot() + server.getErrorPage405());
 }
 
+
+std::map<std::string, std::string> Request::getQueryParameters() const {
+	return queryParameters;
+}

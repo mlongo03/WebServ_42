@@ -13,6 +13,7 @@
 #include "Server.hpp"
 #include "Response.hpp"
 #include "Location.hpp"
+#include "Cgi.hpp"
 
 class Request {
 public:
