@@ -257,7 +257,14 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
 
     if (isDirectory(filePath)) {
         if (checkIndexExistence(location, server)) {
-            filePath = filePath + (filePath[filePath.size() - 1] != '/' ? "/" : "") + getIndex(location, server);
+            std::string tmpfilePath = filePath + (filePath[filePath.size() - 1] != '/' ? "/" : "") + getIndex(location, server);
+            if (checkAutoindexStatus(location, server) && (!fileExistsAndAccessible(tmpfilePath, F_OK) || !fileExistsAndAccessible(tmpfilePath, R_OK))) {
+                std::string directoryListingHTML = generateDirectoryListingHTML(filePath);
+                response.setBodyFromString(directoryListingHTML);
+                response.setHeader("Content-Type", "text/html");
+                return;
+            }
+            filePath = tmpfilePath;
         } else if (checkAutoindexStatus(location, server)) {
             std::string directoryListingHTML = generateDirectoryListingHTML(filePath);
             response.setBodyFromString(directoryListingHTML);
@@ -296,6 +303,67 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
         response.setBodyFromString(buffer.str());
     }
 }
+
+// void Request::handlePostRequest(Server &server, Response &response, Location *location, std::string filePath) const {
+
+//     if (checkCgiMatch(location, server, filePath)) {
+//         if (!fileExistsAndAccessible(filePath, F_OK)) {
+//             response.setStatusCode(404);  // Not Found
+//             response.setStatusMessage("Not Found");
+//             response.setBodyFromFile(server.getRoot() + server.getErrorPage404());
+//             return;
+//         } else if (!fileExistsAndAccessible(filePath, R_OK)) {
+//             response.setStatusCode(403);  // Forbidden
+//             response.setStatusMessage("Forbidden");
+//             response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
+//             return;
+//         }
+//         std::cout << "file correct for the cgi: file = " << filePath << ", extensions = ";
+//         std::vector<std::string> extensions = getCgiExtension(location, server);
+//         for (size_t i = 0; i < extensions.size(); i++) {
+//             std::cout << extensions[i] << ", ";
+//         }
+//         std::cout << std::endl;
+//         //here you can call the cgi passing the Request object in this way (*this) and then passing the cgi_extensions in this way (getCgiExtension(location, server))
+//         return;
+//     }
+
+//     // Determine the target directory for uploaded files
+//     std::string uploadDir = (location && !location->getUploadDir().empty()) ? location->getUploadDir() : server.getUploadDir();
+
+//     // Check if the directory exists, create it if not
+//     if (!fileExistsAndAccessible(uploadDir, F_OK)) {
+//         if (mkdir(uploadDir.c_str(), 0755) != 0) {
+//             response.setStatusCode(500);
+//             response.setStatusMessage("Internal Server Error");
+//             response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
+//             return;
+//         }
+//     }
+
+//     // Determine the file path for the uploaded data
+//     std::string filePathOut = uploadDir + "/uploaded_data.txt";
+
+//     // Check if the file is writable or does not exist (meaning we can create it)
+//     if (fileExistsAndAccessible(filePathOut, W_OK) || !fileExistsAndAccessible(filePathOut, F_OK)) {
+//         std::ofstream outFile(filePathOut.c_str());
+//         if (outFile) {
+//             outFile << body; // Write the request body to the file
+//             outFile.close();
+//             response.setStatusCode(201);
+//             response.setStatusMessage("Created");
+//             response.setBodyFromString("<html><body><h1>201 Created</h1></body></html>");
+//         } else {
+//             response.setStatusCode(500);
+//             response.setStatusMessage("Internal Server Error");
+//             response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
+//         }
+//     } else {
+//         response.setStatusCode(403);
+//         response.setStatusMessage("Forbidden");
+//         response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
+//     }
+// }
 
 
 void Request::handlePostRequest(Server &server, Response &response, Location *location, std::string filePath) const {

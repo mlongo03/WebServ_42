@@ -243,17 +243,19 @@ void Worker::handleClientData(Client &client) {
 void Worker::handleWritableData(Client &client) {
 
     std::string response = client.getResponse();
-    int bytesSent = send(client.getFd(), response.c_str(), response.size(), 0);
 
-    if (bytesSent == -1) {
-        // Error occurred while sending
-        throw std::runtime_error("send error");
-    } else {
-        // std::cout << "response sent = " << response << std::endl;
-        response.erase(0, bytesSent);
+    if (!response.empty()) {
+        int bytesSent = send(client.getFd(), response.c_str(), response.size(), 0);
 
-        if (response.empty()) {
-            client.setResponse("");
+        if (bytesSent == -1) {
+            throw std::runtime_error("send error");
+        } else {
+            // std::cout << "response sent = " << response << std::endl;
+            response.erase(0, bytesSent);
+
+            if (response.empty()) {
+                client.clearResponse();
+            }
         }
     }
 }
