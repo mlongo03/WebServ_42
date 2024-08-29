@@ -81,6 +81,10 @@ void Client::setResponse(std::string response) {
     this->response = response;
 }
 
+void Client::clearResponse() {
+    response.clear();
+}
+
 bool Client::hasServer() const {
     return server != NULL;
 }

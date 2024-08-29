@@ -29,6 +29,7 @@ public:
     void setSocket(Socket socket);
     void setRequest(std::string request);
     void setResponse(std::string response);
+    void clearResponse();
     bool hasServer() const;
 	bool operator==(int socket);
 
