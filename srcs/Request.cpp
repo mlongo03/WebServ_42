@@ -294,26 +294,24 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
         }
         std::cout << std::endl;
 
-	if (!fileExistsAndAccessible(filePath, X_OK))
-	{
-		std::cerr << "Script has no execute permission: " << std::endl;
-		response.setStatusCode(403);
-		response.setStatusMessage("Forbidden, Script has no execute permission");
-		response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
-	}
-	else
-	{
-		Cgi cgiHandler(filePath, extensions);
-		cgiHandler.setMethod(method);
-		cgiHandler.setPath_info(filePath);
-		cgiHandler.extract_script_name(filePath);
-		cgiHandler.setQueryParameters(queryParameters);
-		std::string contentType = determineContentType(filePath);
-		// std::cout << "content type is " << contentType << std::endl;
-		cgiHandler.prepareEnvVars(body, contentType);
-		cgiHandler.execute(response, server);
-	}
-    //here you can call the cgi passing the Request object in this way (*this) and then passing the cgi_extensions in this way (getCgiExtension(location, server))
+        if (!fileExistsAndAccessible(filePath, X_OK))
+        {
+            std::cerr << "Script has no execute permission: " << std::endl;
+            response.setStatusCode(403);
+            response.setStatusMessage("Forbidden, Script has no execute permission");
+            response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
+        }
+        else
+        {
+            Cgi cgiHandler(filePath, extensions);
+            cgiHandler.setMethod(method);
+            cgiHandler.setPath_info(filePath);
+            cgiHandler.extract_script_name(filePath);
+            cgiHandler.setQueryParameters(queryParameters);
+            std::string contentType = determineContentType(filePath);
+            cgiHandler.prepareEnvVars(body, contentType);
+            cgiHandler.execute(response, server);
+        }
     } else {
         std::string contentType = determineContentType(filePath);
         response.setHeader("Content-Type", contentType);
