@@ -1,19 +1,25 @@
 #!/usr/bin/env python3
 import os
 import sys
-import urllib.parse
 
 def handle_get():
     # Retrieve the query string from the environment
-    query_string = os.environ.get("QUERY_STRING", "")
-
-    # Parse the query string
-    params = urllib.parse.parse_qs(query_string)
+    method = os.environ.get("METHOD",)
 
     # Prepare the response body
-    response_body = f"Received GET data: {query_string}\n"
-    for key, values in params.items():
-        response_body += f"{key}: {', '.join(values)}\n"
+    response_body = f"""
+				<html>
+				<head><title>CGI GET Response</title></head>
+				<body>
+				<h1>Hello, World!</h1>
+				<p>This is a response from a CGI script for a {method} request.</p>
+				"""
+    for key, values in os.environ.items():
+        response_body += f"<p>{key}: {values}</p>\n"
+    response_body += """
+                </body>
+                </html>
+                """
 
     # Calculate the content length of the response body
     response_content_length = len(response_body)
@@ -25,16 +31,7 @@ def handle_get():
     print(response_body)
 
 def main():
-    # Check if the request method is GET
-    method = os.environ.get('REQUEST_METHOD', 'GET')
-    if method == 'GET':
-        handle_get()
-    else:
-        # Set up headers for the response
-        error_message = "405 Method Not Allowed"
-        print(f"Status: 405 Method Not Allowed\r\nContent-Type: text/html\r\nContent-Length: {len(error_message)}\r\n\r\n")
-        # Output the error message
-        print(error_message)
-        
+    handle_get()
+
 if __name__ == "__main__":
     main()

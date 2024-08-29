@@ -14,54 +14,55 @@
 #include <cstdio>
 #include <sstream>
 #include "Utils.hpp"
+#include "Response.hpp"
+
+class Response;
 
 class Cgi {
-private:
-	std::string path_info;         // The path to the CGI script to be executed
-    std::string script_name;
-    std::string method;             // HTTP method (GET, POST, etc.)
-    std::string body;               // The body of the HTTP request (for POST)
-	std::string query_string;	   // The query string of the URL if present
-	std::vector<std::string> cgiExtensions;  // Supported CGI extensions (e.g., .pl, .py)
-    std::map<std::string, std::string> envVars; // Environment variables for the CGI script
+	private:
+		std::string path_info;         // The path to the CGI script to be executed
+		std::string script_name;
+		std::string method;             // HTTP method (GET, POST, etc.)
+		std::string body;               // The body of the HTTP request (for POST)
+		std::vector<std::string> cgiExtensions;
+		std::map<std::string, std::string> envVars;
+		std::map<std::string, std::string> queryParameters; // Query parameters extracted from the URL
 
-public:
+	public:
 
-	Cgi();
-	Cgi(const Cgi &src);
-	Cgi &operator=(const Cgi &src);
-	~Cgi();
+		Cgi();
+		Cgi(const Cgi &src);
+		Cgi &operator=(const Cgi &src);
+		~Cgi();
 
-    Cgi(const std::string & path_info, const std::vector<std::string> &extensions);
+		Cgi(const std::string & path_info, const std::vector<std::string> &extensions);
 
-	//getters
-	std::string getScriptName() const;
-	std::string getMethod() const;
-	std::string getBody() const;
-	std::string getPath_info() const;
-	std::string getQueryString() const;
-	std::map<std::string, std::string> getEnvVars() const;
-	std::vector<std::string> getCgiExtensions() const;
-	// std::string getCgiRoot() const;
+		//getters
+		std::string getScriptName() const;
+		std::string getMethod() const;
+		std::string getBody() const;
+		std::string getPath_info() const;
+		std::map<std::string, std::string> getEnvVars() const;
+		std::vector<std::string> getCgiExtensions() const;
+		std::map<std::string, std::string> getQueryParameters() const;
 
-    // Setters for method, script path, and request body
-    void setMethod(const std::string &httpMethod);
-    void setBody(const std::string &requestBody);
-    void setScriptName(const std::string &path);
-	void setPath_info (const std::string &path);
-	void setQueryString(const std::string &queryString);
-    bool isCgiRequest(const std::string &url);
-	void prepareEnvVars(const std::string &postBody, const std::string &contentType);
+		// Setters for method, script path, and request body
+		void setMethod(const std::string &httpMethod);
+		void setBody(const std::string &requestBody);
+		void setScriptName(const std::string &path);
+		void setPath_info (const std::string &path);
+		bool isCgiRequest(const std::string &url);
+		void prepareEnvVars(const std::string &postBody, const std::string &contentType);
+		void setQueryParameters(const std::map<std::string, std::string> &params);
 
-    // Convert map of environment variables to char* array for execve
-    char **buildEnvArray();
+		// Convert map of environment variables to char* array for execve
+		char **buildEnvArray();
 
-	void extract_query_string(const std::string &path);
-	std::string handleCgiRequest(Cgi &cgi, const std::string &getMethod, const std::string &postBody, const std::string &contentType);
-    std::string execute();
-	std::string makeRelativePath(const std::string &path);
-	std::string check_correct_header(std::string &result);
-	std::string generateErrorResponse(int statusCode, const std::string& statusMessage, const std::string& errorMessage);
+		void extract_script_name(const std::string &path);
+		// std::string handleCgiRequest(Cgi &cgi, const std::string &getMethod, const std::string &postBody, const std::string &contentType);
+		void	execute(Response &response, Server &server);
+		bool check_correct_header(std::string &result, Response &response, Server &server);
+		std::string getBodyFromResponse(const std::string& response);
 };
 
 #endif
