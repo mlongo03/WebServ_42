@@ -5,7 +5,7 @@ Server::Server() :
 	host("0.0.0.0"),
 	listen("8080"),
 	root("./var/www"),
-	index("index.html"), // default index if no index is specified in the location block
+	// index("index.html"), // default index if no index is specified in the location block
 	_error_page_400("/error_page/400.html"),
 	_error_page_401("/error_page/401.html"),
 	_error_page_403("/error_page/403.html"),
