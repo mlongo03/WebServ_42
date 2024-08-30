@@ -253,7 +253,7 @@ std::vector<std::string> getCgiExtension(Location *location, Server &server) {
 
 void Request::handleGetRequest(Server &server, Response &response, Location *location, std::string filePath) const {
 
-    std::cout << "complete file path : " << filePath << std::endl;
+    // std::cout << "complete file path : " << filePath << std::endl;
 
     if (isDirectory(filePath)) {
         if (checkIndexExistence(location, server)) {
@@ -287,66 +287,126 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
         response.setStatusMessage("Forbidden");
         response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
     } else if (checkCgiMatch(location, server, filePath)) {
-        std::cout << "file correct for the cgi: file = " << filePath << ", extensions = ";
-        std::vector<std::string> extensions = getCgiExtension(location, server);
-        for (size_t i = 0; i < extensions.size(); i++) {
-            std::cout << extensions[i] << ", ";
-        }
-        std::cout << std::endl;
+		std::vector<std::string> extensions = getCgiExtension(location, server);
+		if (!fileExistsAndAccessible(filePath, X_OK))
+		{
+			std::cerr << "Script has no execute permission: " << std::endl;
+			response.setStatusCode(403);
+			response.setStatusMessage("Forbidden, Script has no execute permission");
+			response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
+		}
+		else
+		{
+			try
+			{
+				Cgi cgiHandler(filePath, method, extensions, queryParameters);
+				std::cout << " ###Headers are " << std::endl;
+				printHeaders(headers);
+				std::cout << " ###" << std::endl;
+				cgiHandler.extract_script_name(filePath);
+				std::string contentType = getContentType();
+				cgiHandler.prepareEnvVars(body, contentType, 0);
+				cgiHandler.execute(response, server);
+			}
+			catch(const std::exception& e)
+			{
+				std::cerr << "CGI execution failed: " << e.what() << std::endl;
+				response.setStatusCode(500);  // Internal Server Error
+				response.setStatusMessage("Internal Server Error");
+				response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
+			}
 
-	if (!fileExistsAndAccessible(filePath, X_OK))
-	{
-		std::cerr << "Script has no execute permission: " << std::endl;
-		response.setStatusCode(403);
-		response.setStatusMessage("Forbidden, Script has no execute permission");
-		response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
-	}
-	else
-	{
-		Cgi cgiHandler(filePath, extensions);
-		cgiHandler.setMethod(method);
-		cgiHandler.setPath_info(filePath);
-		cgiHandler.extract_script_name(filePath);
-		cgiHandler.setQueryParameters(queryParameters);
+		}
+	} else {
 		std::string contentType = determineContentType(filePath);
-		// std::cout << "content type is " << contentType << std::endl;
-		cgiHandler.prepareEnvVars(body, contentType);
-		cgiHandler.execute(response, server);
+		std::cout << "Content-Type of a normal get: " << contentType << std::endl;
+		response.setHeader("Content-Type", contentType);
+		std::ifstream file(filePath.c_str(), std::ios::binary);
+		std::ostringstream buffer;
+		buffer << file.rdbuf();
+		response.setBodyFromString(buffer.str());
 	}
-    //here you can call the cgi passing the Request object in this way (*this) and then passing the cgi_extensions in this way (getCgiExtension(location, server))
-    } else {
-        std::string contentType = determineContentType(filePath);
-        response.setHeader("Content-Type", contentType);
-        std::ifstream file(filePath.c_str(), std::ios::binary);
-        std::ostringstream buffer;
-        buffer << file.rdbuf();
-        response.setBodyFromString(buffer.str());
-    }
 }
 
 void Request::handlePostRequest(Server &server, Response &response, Location *location, std::string filePath) const {
+	if (checkCgiMatch(location, server, filePath)) {
+		std::vector<std::string> extensions = getCgiExtension(location, server);
 
-    if (checkCgiMatch(location, server, filePath)) {
-        if (!fileExistsAndAccessible(filePath, F_OK)) {
-            response.setStatusCode(404);  // Not Found
-            response.setStatusMessage("Not Found");
-            response.setBodyFromFile(server.getRoot() + server.getErrorPage404());
-            return;
-        } else if (!fileExistsAndAccessible(filePath, R_OK)) {
-            response.setStatusCode(403);  // Forbidden
-            response.setStatusMessage("Forbidden");
-            response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
-            return;
-        }
-        std::cout << "file correct for the cgi: file = " << filePath << ", extensions = ";
-        std::vector<std::string> extensions = getCgiExtension(location, server);
-        for (size_t i = 0; i < extensions.size(); i++) {
-            std::cout << extensions[i] << ", ";
-        }
-        std::cout << std::endl;
-        //here you can call the cgi passing the Request object in this way (*this) and then passing the cgi_extensions in this way (getCgiExtension(location, server))
-        return;
-    }
+		if (!fileExistsAndAccessible(filePath, F_OK)) {
+			response.setStatusCode(404);  // Not Found
+			response.setStatusMessage("Not Found");
+			response.setBodyFromFile(server.getRoot() + server.getErrorPage404());
+			return;
+		} else if (!fileExistsAndAccessible(filePath, R_OK)) {
+			response.setStatusCode(403);  // Forbidden
+			response.setStatusMessage("Forbidden");
+			response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
+			return;
+		} else if (!fileExistsAndAccessible(filePath, X_OK)) {
+			std::cerr << "Script has no execute permission: " << filePath << std::endl;
+			response.setStatusCode(403);  // Forbidden
+			response.setStatusMessage("Forbidden, Script has no execute permission");
+			response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
+			return;
+		} else {
+			std::cout << "Calling CGI for POST request" << std::endl;
+			try {
+				Cgi cgiHandler(filePath, method, extensions, queryParameters);
+
+
+				std::cout << " ###Headers are " << std::endl;
+				printHeaders(headers);
+				std::cout << " ###" << std::endl;
+				cgiHandler.extract_script_name(filePath);
+				std::string contentType = getContentType();
+				cgiHandler.prepareEnvVars(body, contentType , 1);
+				cgiHandler.execute(response, server);
+			} catch (const std::exception &e) {
+				std::cerr << "CGI execution failed: " << e.what() << std::endl;
+				response.setStatusCode(500);  // Internal Server Error
+				response.setStatusMessage("Internal Server Error");
+				response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
+			}
+		}
+		return;
+	}
+
+    // if (checkCgiMatch(location, server, filePath)) {
+    //     std::vector<std::string> extensions = getCgiExtension(location, server);
+    //     if (!fileExistsAndAccessible(filePath, F_OK)) {
+    //         response.setStatusCode(404);  // Not Found
+    //         response.setStatusMessage("Not Found");
+    //         response.setBodyFromFile(server.getRoot() + server.getErrorPage404());
+    //         return;
+    //     } else if (!fileExistsAndAccessible(filePath, R_OK)) {
+    //         response.setStatusCode(403);  // Forbidden
+    //         response.setStatusMessage("Forbidden");
+    //         response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
+    //         return;
+    //     } else if (!fileExistsAndAccessible(filePath, X_OK))
+	// 	{
+	// 		std::cerr << "Script has no execute permission: " << std::endl;
+	// 		response.setStatusCode(403);
+	// 		response.setStatusMessage("Forbidden, Script has no execute permission");
+	// 		response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
+	// 	}
+	// 	else
+	// 	{
+	// 		std::cout << "calling cgi for post??" << std::endl;
+	// 		Cgi cgiHandler(filePath, method, extensions, queryParameters);
+	// 		cgiHandler.extract_script_name(filePath);
+	// 		std::string contentType = determineContentType(filePath);
+	// 		cgiHandler.prepareEnvVars(body, contentType);
+	// 		cgiHandler.execute(response, server);
+	// 	}
+    //     // std::cout << "file correct for the cgi: file = " << filePath << ", extensions = ";
+    //     // for (size_t i = 0; i < extensions.size(); i++) {
+    //     //     std::cout << extensions[i] << ", ";
+    //     // }
+    //     // std::cout << std::endl;
+    //     // //here you can call the cgi passing the Request object in this way (*this) and then passing the cgi_extensions in this way (getCgiExtension(location, server))
+    //     return;
+    // }
 
     // Determine the target directory for uploaded files
     // std::string uploadDir = (location && !location->getUploadDir().empty()) ? location->getUploadDir() : server.getUploadDir();
@@ -418,3 +478,22 @@ void Request::handleUnsupportedMethod(Server &server, Response &response) const 
 std::map<std::string, std::string> Request::getQueryParameters() const {
 	return queryParameters;
 }
+
+
+void Request::printHeaders(const std::map<std::string, std::string > &headers ) const
+{
+	std::map<std::string, std::string>::const_iterator it;
+	for (it = headers.begin(); it != headers.end(); ++it) {
+		std::cout << it->first << ": " << it->second << std::endl;
+	}
+}
+
+
+ std::string Request::getContentType() const {
+        std::map<std::string, std::string>::const_iterator it = headers.find("Content-Type");
+        if (it != headers.end()) {
+            return it->second;
+        }
+        return "";
+    }
+

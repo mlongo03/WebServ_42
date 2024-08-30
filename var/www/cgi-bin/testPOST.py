@@ -41,24 +41,5 @@ def handle_post():
     # Output the response body
     print(response_body)
 
-def main():
-    method = os.environ.get('REQUEST_METHOD', 'GET')
-    if method == 'POST':
-        handle_post()
-    else:
-        # If the request method is not POST, return a 405 Method Not Allowed response
-        response_body = """
-        <html>
-        <head><title>405 Method Not Allowed</title></head>
-        <body>
-        <h1>405 Method Not Allowed</h1>
-        <p>This server only handles POST requests.</p>
-        </body>
-        </html>
-        """
-        response_content_length = len(response_body)
-        print(f"Status: 405 Method Not Allowed\r\nContent-Type: text/html\r\nContent-Length: {response_content_length}\r\n\r\n")
-        print(response_body)
-
 if __name__ == "__main__":
-    main()
+    handle_post()

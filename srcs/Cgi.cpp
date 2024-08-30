@@ -10,12 +10,12 @@
 
 	Cgi &Cgi::operator=(const Cgi &src) {
 		if (this != &src) {
-			script_name = src.script_name;
-			cgiExtensions = src.cgiExtensions;
 			path_info = src.path_info;
 			method = src.method;
 			envVars = src.envVars;
 			body = src.body;
+			script_name = src.script_name;
+			cgiExtensions = src.cgiExtensions;
 			queryParameters = src.queryParameters;
 		}
 		return *this;
@@ -24,8 +24,8 @@
 	Cgi::~Cgi() {}
 
 
-   Cgi::Cgi(const std::string &path , const std::vector<std::string> &extensions)
-        :path_info(path), cgiExtensions(extensions) {}
+	Cgi::Cgi(const std::string &path , const std::string &method , const std::vector<std::string> &extensions, const std::map<std::string, std::string> &params) : path_info(path), method(method), cgiExtensions(extensions) , queryParameters(params)
+	{}
 
 	//getters
 	std::string Cgi::getScriptName() const {
@@ -97,25 +97,27 @@ bool Cgi::isCgiRequest(const std::string &url) {
 }
 
 
-void Cgi::prepareEnvVars( const std::string &postBody, const std::string &contentType) // we can add other thing like content type ecc but this has to be replaced from the parsed request
+void Cgi::prepareEnvVars( const std::string &postBody, const std::string &contentType, int type) // we can add other thing like content type ecc but this has to be replaced from the parsed request
 {
     envVars["METHOD"] = method;
     envVars["SCRIPT_NAME"] = script_name;
     envVars["PATH_INFO"] = path_info;
 
-	if (method == "GET")
+	if (method == "GET" && type == 0)
 	{
 		for (std::map<std::string, std::string>::iterator it = queryParameters.begin(); it != queryParameters.end(); ++it)
         {
             envVars[it->first] = it->second;
         }
 	}
-    if (method == "POST")
+    if (method == "POST" && type == 1)
 	{
         std::ostringstream oss;
         oss << postBody.size();
         envVars["CONTENT_LENGTH"] = oss.str();
         envVars["CONTENT_TYPE"] = contentType;
+		std::cout << "content type is " << contentType << std::endl;
+		std::cout << "body is " << postBody << std::endl;
         body = postBody; // Store the POST body for later use
     }
 }

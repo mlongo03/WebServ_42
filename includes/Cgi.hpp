@@ -35,7 +35,7 @@ class Cgi {
 		Cgi &operator=(const Cgi &src);
 		~Cgi();
 
-		Cgi(const std::string & path_info, const std::vector<std::string> &extensions);
+		Cgi(const std::string &path , const std::string &method , const std::vector<std::string> &extensions, const std::map<std::string, std::string> &params);
 
 		//getters
 		std::string getScriptName() const;
@@ -52,7 +52,7 @@ class Cgi {
 		void setScriptName(const std::string &path);
 		void setPath_info (const std::string &path);
 		bool isCgiRequest(const std::string &url);
-		void prepareEnvVars(const std::string &postBody, const std::string &contentType);
+		void prepareEnvVars(const std::string &postBody, const std::string &contentType, int type);
 		void setQueryParameters(const std::map<std::string, std::string> &params);
 
 		// Convert map of environment variables to char* array for execve

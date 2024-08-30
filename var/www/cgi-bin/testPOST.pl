@@ -38,20 +38,7 @@ sub handle_post {
 }
 
 sub main {
-    # Check the request method
-    my $method = $ENV{'REQUEST_METHOD'} || 'GET';
-    if ($method eq 'POST') {
-        handle_post();
-    } else {
-        # Set up headers for the response
-        my $error_message = "<html><head><title>405 Method Not Allowed</title></head><body><h1>405 Method Not Allowed</h1></body></html>";
-        print "Status: 405 Method Not Allowed\r\n";
-        print "Content-Type: text/html\r\n";
-        print "Content-Length: " . length($error_message) . "\r\n";
-        print "\r\n";
-        # Output the error message
-        print $error_message;
-    }
+	handle_post();
 }
 
 main();
