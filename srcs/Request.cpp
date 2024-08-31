@@ -300,15 +300,13 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
 		{
 			try
 			{
-				Cgi cgiHandler(filePath, method, extensions, queryParameters);
-				std::cout << " ###Headers are " << std::endl;
-				printHeaders(headers);
-				std::cout << " ###" << std::endl;
-				cgiHandler.extract_script_name(filePath);
+				Cgi cgiHandler(filePath, extensions, *this);
+				// std::cout << " ###Headers are " << std::endl;
+				// printHeaders(headers);
+				// std::cout << " ###" << std::endl;
 				std::string contentType = getContentType();
-				std::cout << "Content-Type of a cgi get: |" << contentType << "|"<< std::endl;
-				std::cout << "body of a cgi get: |" << body << "|"<< std::endl;
-
+				// std::cout << "Content-Type of a cgi get: |" << contentType << "|"<< std::endl;
+				// std::cout << "body of a cgi get: |" << body << "|"<< std::endl;
 				cgiHandler.prepareEnvVars(*this);
 				cgiHandler.execute(response, server, *this);
 			}
@@ -353,14 +351,13 @@ void Request::handlePostRequest(Server &server, Response &response, Location *lo
 			response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
 			return;
 		} else {
-			std::cout << "Calling CGI for POST request" << std::endl;
+			// std::cout << "Calling CGI for POST request" << std::endl;
 			try {
-				Cgi cgiHandler(filePath, method, extensions, queryParameters);
+				Cgi cgiHandler(filePath, extensions, *this);
 
-				std::cout << " ###Headers are " << std::endl;
-				printHeaders(headers);
-				std::cout << " ###" << std::endl;
-				cgiHandler.extract_script_name(filePath);
+				// std::cout << " ###Headers are " << std::endl;
+				// printHeaders(headers);
+				// std::cout << " ###" << std::endl;
 				std::string contentType = getContentType();
 				cgiHandler.prepareEnvVars(*this);
 				cgiHandler.execute(response, server, *this);
@@ -373,43 +370,6 @@ void Request::handlePostRequest(Server &server, Response &response, Location *lo
 		}
 		return;
 	}
-
-    // if (checkCgiMatch(location, server, filePath)) {
-    //     std::vector<std::string> extensions = getCgiExtension(location, server);
-    //     if (!fileExistsAndAccessible(filePath, F_OK)) {
-    //         response.setStatusCode(404);  // Not Found
-    //         response.setStatusMessage("Not Found");
-    //         response.setBodyFromFile(server.getRoot() + server.getErrorPage404());
-    //         return;
-    //     } else if (!fileExistsAndAccessible(filePath, R_OK)) {
-    //         response.setStatusCode(403);  // Forbidden
-    //         response.setStatusMessage("Forbidden");
-    //         response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
-    //         return;
-    //     } else if (!fileExistsAndAccessible(filePath, X_OK))
-	// 	{
-	// 		std::cerr << "Script has no execute permission: " << std::endl;
-	// 		response.setStatusCode(403);
-	// 		response.setStatusMessage("Forbidden, Script has no execute permission");
-	// 		response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
-	// 	}
-	// 	else
-	// 	{
-	// 		std::cout << "calling cgi for post??" << std::endl;
-	// 		Cgi cgiHandler(filePath, method, extensions, queryParameters);
-	// 		cgiHandler.extract_script_name(filePath);
-	// 		std::string contentType = determineContentType(filePath);
-	// 		cgiHandler.prepareEnvVars(body, contentType);
-	// 		cgiHandler.execute(response, server);
-	// 	}
-    //     // std::cout << "file correct for the cgi: file = " << filePath << ", extensions = ";
-    //     // for (size_t i = 0; i < extensions.size(); i++) {
-    //     //     std::cout << extensions[i] << ", ";
-    //     // }
-    //     // std::cout << std::endl;
-    //     // //here you can call the cgi passing the Request object in this way (*this) and then passing the cgi_extensions in this way (getCgiExtension(location, server))
-    //     return;
-    // }
 
     // Determine the target directory for uploaded files
     // std::string uploadDir = (location && !location->getUploadDir().empty()) ? location->getUploadDir() : server.getUploadDir();

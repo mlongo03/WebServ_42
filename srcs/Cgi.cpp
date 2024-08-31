@@ -24,8 +24,13 @@
 	Cgi::~Cgi() {}
 
 
-	Cgi::Cgi(const std::string &path , const std::string &method , const std::vector<std::string> &extensions, const std::map<std::string, std::string> &params) : path_info(path), method(method), cgiExtensions(extensions) , queryParameters(params)
-	{}
+	Cgi::Cgi(const std::string &path , const std::vector<std::string> &extensions, const Request &request) : path_info(path), cgiExtensions(extensions)
+	{
+		method = request.getMethod();
+		body = request.getBody();
+		queryParameters = request.getQueryParameters();
+		extract_script_name(path);
+	}
 
 	//getters
 	std::string Cgi::getScriptName() const {

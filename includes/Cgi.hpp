@@ -44,7 +44,7 @@ class Cgi {
 		Cgi &operator=(const Cgi &src);
 		~Cgi();
 
-		Cgi(const std::string &path , const std::string &method , const std::vector<std::string> &extensions, const std::map<std::string, std::string> &params);
+		Cgi(const std::string &path, const std::vector<std::string> &extensions,const Request &request);
 
 		//getters
 		std::string getScriptName() const;
