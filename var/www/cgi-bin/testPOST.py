@@ -36,7 +36,7 @@ def handle_post():
     response_content_length = len(response_body)
 
     # Set up headers for the response
-    print(f"Status: 200 OK\r\nContent-Type: text/html\r\nContent-Length: {response_content_length}\r\n\r\n")
+    print(f"Status: 200 OK\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: {response_content_length}\r\n\r\n")
 
     # Output the response body
     print(response_body)

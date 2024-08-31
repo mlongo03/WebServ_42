@@ -97,28 +97,27 @@ bool Cgi::isCgiRequest(const std::string &url) {
 }
 
 
-void Cgi::prepareEnvVars( const std::string &postBody, const std::string &contentType, int type) // we can add other thing like content type ecc but this has to be replaced from the parsed request
+void Cgi::prepareEnvVars( const Request &request)
 {
-    envVars["METHOD"] = method;
+    envVars["METHOD"] = request.getMethod();
     envVars["SCRIPT_NAME"] = script_name;
-    envVars["PATH_INFO"] = path_info;
+    envVars["PATH_INFO"] = request.getPath();
 
-	if (method == "GET" && type == 0)
+	if (method == "GET")
 	{
+		std::map<std::string, std::string> queryParameters = request.getQueryParameters();
 		for (std::map<std::string, std::string>::iterator it = queryParameters.begin(); it != queryParameters.end(); ++it)
-        {
-            envVars[it->first] = it->second;
-        }
+			envVars[it->first] = it->second;
 	}
-    if (method == "POST" && type == 1)
+    else if (method == "POST")
 	{
         std::ostringstream oss;
-        oss << postBody.size();
+        oss << request.getBody().size();
         envVars["CONTENT_LENGTH"] = oss.str();
-        envVars["CONTENT_TYPE"] = contentType;
-		std::cout << "content type is " << contentType << std::endl;
-		std::cout << "body is " << postBody << std::endl;
-        body = postBody; // Store the POST body for later use
+        envVars["CONTENT_TYPE"] = request.getContentType();
+		std::cout << "content type is " << request.getContentType() << std::endl;
+        body = request.getBody();  // Store the POST body for later use
+		std::cout << "body is " << body << std::endl;
     }
 }
 
@@ -137,7 +136,7 @@ void Cgi::prepareEnvVars( const std::string &postBody, const std::string &conten
         return envArray;
     }
 
-void Cgi::execute(Response &response, Server &server) {
+void Cgi::execute(Response &response, Server &server, const Request &request) {
     int pipefd[2];
     if (pipe(pipefd) == -1) {
         throw std::runtime_error("Failed to create pipe");
@@ -210,7 +209,7 @@ void Cgi::execute(Response &response, Server &server) {
         }
 
 		// std::cout << "result before check " << result << std::endl;
-		if (check_correct_header(result, response, server)) {
+		if (check_correct_header(result, response, server, request)) {
 			response.setStatusCode(200);
 			response.setStatusMessage("OK");
 			response.setBodyFromString(getBodyFromResponse(result));
@@ -220,7 +219,7 @@ void Cgi::execute(Response &response, Server &server) {
 
 
 
-bool Cgi::check_correct_header(std::string &result, Response &response, Server &server) {
+bool Cgi::check_correct_header(std::string &result, Response &response, Server &server,const Request &request) {
     // Check if the result is empty
 	// std::cout << "result in check_correct header is: '" << result << "'" << std::endl;
     // std::cout << "result length: " << result.length() << std::endl;
@@ -262,6 +261,21 @@ bool Cgi::check_correct_header(std::string &result, Response &response, Server &
 		return false;
     }
 
+	std::string contentType = result.substr(result.find("Content-Type: ") + 14);
+	contentType = contentType.substr(0, contentType.find("\r\n"));
+	// response.setHeader("Content-Type", contentType);
+
+	// std::cout << "content type in check headers of the response  is |" << contentType << "|" << std::endl;
+	// std::cout << std::endl;
+	// std::cout << "request content type is |" << request.getContentType() << "|"<<std::endl;
+
+	// Check if the content type matches the request only for POST requests because GET requests can have any content type
+	if (request.getMethod() == "POST" &&  contentType != request.getContentType()) {
+		response.setStatusCode(500);
+		response.setStatusMessage("Internal Server Error");
+		response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
+		return false;
+	}
     return true;
 }
 

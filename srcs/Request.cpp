@@ -1,4 +1,5 @@
 #include "Request.hpp"
+#include "Utils.hpp"
 Request::Request(const std::string& rawRequest) {
     parseRequest(rawRequest);
 }
@@ -305,8 +306,11 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
 				std::cout << " ###" << std::endl;
 				cgiHandler.extract_script_name(filePath);
 				std::string contentType = getContentType();
-				cgiHandler.prepareEnvVars(body, contentType, 0);
-				cgiHandler.execute(response, server);
+				std::cout << "Content-Type of a cgi get: |" << contentType << "|"<< std::endl;
+				std::cout << "body of a cgi get: |" << body << "|"<< std::endl;
+
+				cgiHandler.prepareEnvVars(*this);
+				cgiHandler.execute(response, server, *this);
 			}
 			catch(const std::exception& e)
 			{
@@ -343,7 +347,7 @@ void Request::handlePostRequest(Server &server, Response &response, Location *lo
 			response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
 			return;
 		} else if (!fileExistsAndAccessible(filePath, X_OK)) {
-			std::cerr << "Script has no execute permission: " << filePath << std::endl;
+			// std::cerr << "Script has no execute permission: " << filePath << std::endl;
 			response.setStatusCode(403);  // Forbidden
 			response.setStatusMessage("Forbidden, Script has no execute permission");
 			response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
@@ -353,17 +357,16 @@ void Request::handlePostRequest(Server &server, Response &response, Location *lo
 			try {
 				Cgi cgiHandler(filePath, method, extensions, queryParameters);
 
-
 				std::cout << " ###Headers are " << std::endl;
 				printHeaders(headers);
 				std::cout << " ###" << std::endl;
 				cgiHandler.extract_script_name(filePath);
 				std::string contentType = getContentType();
-				cgiHandler.prepareEnvVars(body, contentType , 1);
-				cgiHandler.execute(response, server);
+				cgiHandler.prepareEnvVars(*this);
+				cgiHandler.execute(response, server, *this);
 			} catch (const std::exception &e) {
 				std::cerr << "CGI execution failed: " << e.what() << std::endl;
-				response.setStatusCode(500);  // Internal Server Error
+				response.setStatusCode(500);
 				response.setStatusMessage("Internal Server Error");
 				response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
 			}
@@ -492,7 +495,7 @@ void Request::printHeaders(const std::map<std::string, std::string > &headers ) 
  std::string Request::getContentType() const {
         std::map<std::string, std::string>::const_iterator it = headers.find("Content-Type");
         if (it != headers.end()) {
-            return it->second;
+            return trimSpaces(it->second);
         }
         return "";
     }

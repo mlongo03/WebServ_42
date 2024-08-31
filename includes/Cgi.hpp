@@ -15,7 +15,16 @@
 #include <sstream>
 #include "Utils.hpp"
 #include "Response.hpp"
+#include "Request.hpp"
+#include "Server.hpp"
 
+enum RequestType {
+    GET_REQUEST,
+    POST_REQUEST
+};
+
+class Server;
+class Request;
 class Response;
 
 class Cgi {
@@ -52,7 +61,7 @@ class Cgi {
 		void setScriptName(const std::string &path);
 		void setPath_info (const std::string &path);
 		bool isCgiRequest(const std::string &url);
-		void prepareEnvVars(const std::string &postBody, const std::string &contentType, int type);
+		void prepareEnvVars(const Request &request);
 		void setQueryParameters(const std::map<std::string, std::string> &params);
 
 		// Convert map of environment variables to char* array for execve
@@ -60,8 +69,8 @@ class Cgi {
 
 		void extract_script_name(const std::string &path);
 		// std::string handleCgiRequest(Cgi &cgi, const std::string &getMethod, const std::string &postBody, const std::string &contentType);
-		void	execute(Response &response, Server &server);
-		bool check_correct_header(std::string &result, Response &response, Server &server);
+		void	execute(Response &response, Server &server, const Request &request);
+		bool check_correct_header(std::string &result, Response &response, Server &server,const Request &request);
 		std::string getBodyFromResponse(const std::string& response);
 };
 
