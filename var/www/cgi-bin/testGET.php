@@ -1,6 +1,5 @@
 <?php
 #!/usr/bin/php-cgi
-<?php
 // testGET.php
 
 // Check if there are any GET parameters

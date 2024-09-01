@@ -60,7 +60,6 @@ class Cgi {
 		void setBody(const std::string &requestBody);
 		void setScriptName(const std::string &path);
 		void setPath_info (const std::string &path);
-		bool isCgiRequest(const std::string &url);
 		void prepareEnvVars(const Request &request);
 		void setQueryParameters(const std::map<std::string, std::string> &params);
 

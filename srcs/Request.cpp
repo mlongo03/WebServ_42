@@ -291,22 +291,15 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
 		std::vector<std::string> extensions = getCgiExtension(location, server);
 		if (!fileExistsAndAccessible(filePath, X_OK))
 		{
-			std::cerr << "Script has no execute permission: " << std::endl;
+			// std::cerr << "Script has no execute permission: " << std::endl;
 			response.setStatusCode(403);
 			response.setStatusMessage("Forbidden, Script has no execute permission");
 			response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
 		}
-		else
-		{
+		else {
 			try
 			{
 				Cgi cgiHandler(filePath, extensions, *this);
-				// std::cout << " ###Headers are " << std::endl;
-				// printHeaders(headers);
-				// std::cout << " ###" << std::endl;
-				std::string contentType = getContentType();
-				// std::cout << "Content-Type of a cgi get: |" << contentType << "|"<< std::endl;
-				// std::cout << "body of a cgi get: |" << body << "|"<< std::endl;
 				cgiHandler.prepareEnvVars(*this);
 				cgiHandler.execute(response, server, *this);
 			}
@@ -351,22 +344,17 @@ void Request::handlePostRequest(Server &server, Response &response, Location *lo
 			response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
 			return;
 		} else {
-			// std::cout << "Calling CGI for POST request" << std::endl;
-			try {
-				Cgi cgiHandler(filePath, extensions, *this);
-
-				// std::cout << " ###Headers are " << std::endl;
-				// printHeaders(headers);
-				// std::cout << " ###" << std::endl;
-				std::string contentType = getContentType();
-				cgiHandler.prepareEnvVars(*this);
-				cgiHandler.execute(response, server, *this);
-			} catch (const std::exception &e) {
-				std::cerr << "CGI execution failed: " << e.what() << std::endl;
-				response.setStatusCode(500);
-				response.setStatusMessage("Internal Server Error");
-				response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
-			}
+				try {
+						Cgi cgiHandler(filePath, extensions, *this);
+						cgiHandler.prepareEnvVars(*this);
+						cgiHandler.execute(response, server, *this);
+					}
+				catch (const std::exception &e) {
+					std::cerr << "CGI execution failed: " << e.what() << std::endl;
+					response.setStatusCode(500);
+					response.setStatusMessage("Internal Server Error");
+					response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
+				}
 		}
 		return;
 	}

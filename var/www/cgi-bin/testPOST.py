@@ -24,10 +24,14 @@ def handle_post():
     <ul>
     """
     for key, values in params.items():
-        response_body += f"<li>{key}: {', '.join(values)}</li>\n"
-
+        response_body += f"    <li>{key}: {', '.join(values)}</li>\n"
+    response_body += "    </ul>\n"
+    response_body += "    <p>Environment variables of the POST:</p>\n"
+    response_body += "    <ul>\n"
+    for key, values in os.environ.items():
+        response_body += f"    <li>{key}: {values}</li>\n"
+    response_body += "    </ul>\n"
     response_body += """
-    </ul>
     </body>
     </html>
     """
