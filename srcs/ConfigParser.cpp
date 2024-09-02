@@ -393,6 +393,12 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 				throw std::runtime_error("value of root in location must start with /");
 			currentLocation.setRoot("." + value);
 		}
+		else if (key == "upload_dir")
+		{
+			if (value[0] != '/')
+				throw std::runtime_error("value of upload_dir in location must start with /");
+			currentLocation.setUploadDir("." + value);
+		}
 		else if (key == "cgi_extension")
 		{
 			std::vector<std::string> cgi;
@@ -407,6 +413,22 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 					throw std::runtime_error("Invalid file extension: " + token);
 			}
 			currentLocation.setCgiExtension(cgi);
+		}
+		else if (key == "return")
+		{
+			std::istringstream iss(value);
+			std::string token;
+			std::map<int, std::string> returnMap;
+			int code;
+			std::string uri;
+			iss >> code;
+			iss >> uri;
+			if (code < 100 || code > 599)
+				throw std::runtime_error("Invalid HTTP status code");
+			if (uri.empty())
+				throw std::runtime_error("return URI is empty");
+			returnMap[code] = uri;
+			currentLocation.setReturnMap(returnMap);
 		}
 		else
 		{

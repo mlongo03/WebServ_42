@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <map>
 #include <string>
 #include <cstring>
 #include <cstdlib>
@@ -30,6 +31,8 @@ class Location {
 		int autoindex;
 		std::string root;
 		std::vector<std::string> _cgi_extension;
+		std::string upload_dir;
+		std::map <int, std::string> return_map;
 
 	public:
 		//getters
@@ -40,6 +43,10 @@ class Location {
 		std::string getRoot() const;
 		bool operator==(const Location& location);
 		std::vector<std::string> getCgiExtension() const;
+		std::string getUploadDir() const;
+		std::map <int, std::string> getReturnMap() const;
+
+
 
 		//setters
 		void setIndex(const std::string& index);
@@ -48,6 +55,9 @@ class Location {
 		void setAutoindex(int autoindex);
 		void setRoot(const std::string& root);
 		void setCgiExtension(const std::vector<std::string>  &cgi_extension);
+		void setUploadDir(const std::string& upload_dir);
+		void setReturnMap(const std::map <int, std::string> &return_map);
+
 
 		Location();
 		~Location();
