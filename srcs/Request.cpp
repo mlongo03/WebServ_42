@@ -272,45 +272,29 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
             response.setHeader("Content-Type", "text/html");
             return;
         } else {
-            response.setStatusCode(403);
-            response.setStatusMessage("Forbidden");
-            response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
+			response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
             return;
         }
     }
 
     if (!fileExistsAndAccessible(filePath, F_OK)) {
-        response.setStatusCode(404);
-        response.setStatusMessage("Not Found");
-        response.setBodyFromFile(server.getRoot() + server.getErrorPage404());
+		response.setResponseError(response, server, 404, "Not Found", server.getErrorPage404());
     } else if (!fileExistsAndAccessible(filePath, R_OK)) {
-        response.setStatusCode(403);
-        response.setStatusMessage("Forbidden");
-        response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
+		response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
     } else if (checkCgiMatch(location, server, filePath)) {
 		std::vector<std::string> extensions = getCgiExtension(location, server);
-		if (!fileExistsAndAccessible(filePath, X_OK))
-		{
-			// std::cerr << "Script has no execute permission: " << std::endl;
-			response.setStatusCode(403);
-			response.setStatusMessage("Forbidden, Script has no execute permission");
-			response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
-		}
-		else {
+		if (!fileExistsAndAccessible(filePath, X_OK)) {
+			response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
+		} else {
 			try
 			{
 				Cgi cgiHandler(filePath, extensions, *this);
 				cgiHandler.prepareEnvVars(*this);
 				cgiHandler.execute(response, server, *this);
 			}
-			catch(const std::exception& e)
-			{
-				std::cerr << "CGI execution failed: " << e.what() << std::endl;
-				response.setStatusCode(500);  // Internal Server Error
-				response.setStatusMessage("Internal Server Error");
-				response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
+			catch(const std::exception& e) {
+				response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
 			}
-
 		}
 	} else {
 		std::string contentType = determineContentType(filePath);
@@ -328,33 +312,24 @@ void Request::handlePostRequest(Server &server, Response &response, Location *lo
 		std::vector<std::string> extensions = getCgiExtension(location, server);
 
 		if (!fileExistsAndAccessible(filePath, F_OK)) {
-			response.setStatusCode(404);  // Not Found
-			response.setStatusMessage("Not Found");
-			response.setBodyFromFile(server.getRoot() + server.getErrorPage404());
+			response.setResponseError(response, server, 404, "Not Found", server.getErrorPage404());
 			return;
 		} else if (!fileExistsAndAccessible(filePath, R_OK)) {
-			response.setStatusCode(403);  // Forbidden
-			response.setStatusMessage("Forbidden");
-			response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
+			response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
 			return;
 		} else if (!fileExistsAndAccessible(filePath, X_OK)) {
-			// std::cerr << "Script has no execute permission: " << filePath << std::endl;
-			response.setStatusCode(403);  // Forbidden
-			response.setStatusMessage("Forbidden, Script has no execute permission");
-			response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
+			response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
 			return;
 		} else {
-				try {
-						Cgi cgiHandler(filePath, extensions, *this);
-						cgiHandler.prepareEnvVars(*this);
-						cgiHandler.execute(response, server, *this);
-					}
-				catch (const std::exception &e) {
-					std::cerr << "CGI execution failed: " << e.what() << std::endl;
-					response.setStatusCode(500);
-					response.setStatusMessage("Internal Server Error");
-					response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
-				}
+			try
+			{
+				Cgi cgiHandler(filePath, extensions, *this);
+				cgiHandler.prepareEnvVars(*this);
+				cgiHandler.execute(response, server, *this);
+			}
+			catch (const std::exception &e) {
+				response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+			}
 		}
 		return;
 	}
@@ -366,9 +341,7 @@ void Request::handlePostRequest(Server &server, Response &response, Location *lo
     // Check if the directory exists, create it if not
     if (!fileExistsAndAccessible(uploadDir, F_OK)) {
         if (mkdir(uploadDir.c_str(), 0755) != 0) {
-            response.setStatusCode(500);
-            response.setStatusMessage("Internal Server Error");
-            response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
+			response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
             return;
         }
     }
@@ -386,14 +359,10 @@ void Request::handlePostRequest(Server &server, Response &response, Location *lo
             response.setStatusMessage("Created");
             response.setBodyFromString("<html><body><h1>201 Created</h1></body></html>");
         } else {
-            response.setStatusCode(500);
-            response.setStatusMessage("Internal Server Error");
-            response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
+			response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
         }
     } else {
-        response.setStatusCode(403);
-        response.setStatusMessage("Forbidden");
-        response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
+		response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
     }
 }
 
@@ -401,20 +370,14 @@ void Request::handleDeleteRequest(Server &server, Response &response, Location *
     (void)location; //remove the line after you start to use the variable
 
     if (!fileExistsAndAccessible(filePath, F_OK)) {
-        response.setStatusCode(404);
-        response.setStatusMessage("Not Found");
-        response.setBodyFromFile(server.getRoot() + server.getErrorPage404());
+		response.setResponseError(response, server, 404, "Not Found", server.getErrorPage404());
     } else if (!fileExistsAndAccessible(filePath, W_OK)) {
-        response.setStatusCode(403);
-        response.setStatusMessage("Forbidden");
-        response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
+		response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
     } else {
         if (remove(filePath.c_str()) == 0) {
             response.setBodyFromString("<html><body><h1>200 OK</h1></body></html>");
         } else {
-            response.setStatusCode(500);
-            response.setStatusMessage("Internal Server Error");
-            response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
+			response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
         }
     }
 }

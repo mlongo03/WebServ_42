@@ -1,17 +1,20 @@
+#!/usr/bin/php
 <?php
-#!/usr/bin/php-cgi
 // testGET.php
 
-// Check if there are any GET parameters
-if (!empty($_GET)) {
-    echo "<h1>GET Request Parameters</h1>";
-    echo "<ul>";
-    // Loop through each GET parameter and display it
-    foreach ($_GET as $key => $value) {
-        echo "<li><strong>" . htmlspecialchars($key) . ":</strong> " . htmlspecialchars($value) . "</li>";
-    }
-    echo "</ul>";
-} else {
-    echo "<h1>No GET parameters found</h1>";
+$response_body = "<html><head><title>My CGI Script</title></head><body><h1>GET REQUEST</h1></body></html>";
+
+// Add the environment variables to the response body
+$response_body .= "<h2>Environment Variables of the cgi get script </h2>";
+$response_body .= "<ul>";
+foreach (array_keys(getenv()) as $key) {
+    $value = getenv($key);
+    $response_body .= "<li><strong>" . htmlspecialchars($key) . ":</strong> " . htmlspecialchars($value) . "</li>";
 }
+$response_body .= "</ul>";
+
+echo "Status: 200 OK\r\n";
+echo "Content-Type: text/html\r\n";
+echo "Content-Length: " . strlen($response_body) . "\r\n\r\n";
+echo $response_body;
 ?>
