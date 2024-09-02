@@ -215,6 +215,8 @@ void Worker::handleClientData(Client &client) {
         }
     }
 
+    std::cout << "bytes read : " << bytesRead << std::endl;
+
     if (bytesRead <= 0) {
         epollHandler.removeFd(client.getFd());
         clientSockets.erase(std::find(clientSockets.begin(), clientSockets.end(), client.getFd()));

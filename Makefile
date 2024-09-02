@@ -35,9 +35,11 @@ $(NAME): $(OBJS) $(HDRS) permission_set
 
 permission_set:
 	@chmod 000 $(TESTING_FOLDER)/get_test/not_permission_file.txt
+	@chmod 000 $(TESTING_FOLDER)/test_notauthorized
 
 permission_unset:
 	@chmod 777 $(TESTING_FOLDER)/get_test/not_permission_file.txt
+	@chmod 777 $(TESTING_FOLDER)/test_notauthorized
 
 clean: permission_unset
 	@rm -f $(OBJS)

@@ -256,6 +256,12 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
     std::cout << "complete file path : " << filePath << std::endl;
 
     if (isDirectory(filePath)) {
+        if (!fileExistsAndAccessible(filePath, R_OK)) {
+            response.setStatusCode(403);
+            response.setStatusMessage("Forbidden");
+            response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
+            return;
+        }
         if (checkIndexExistence(location, server)) {
             std::string tmpfilePath = filePath + (filePath[filePath.size() - 1] != '/' ? "/" : "") + getIndex(location, server);
             if (checkAutoindexStatus(location, server) && (!fileExistsAndAccessible(tmpfilePath, F_OK) || !fileExistsAndAccessible(tmpfilePath, R_OK))) {
@@ -323,6 +329,16 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
 }
 
 void Request::handlePostRequest(Server &server, Response &response, Location *location, std::string filePath) const {
+
+
+    if (isDirectory(filePath)) {
+        if (!fileExistsAndAccessible(filePath, R_OK)) {
+            response.setStatusCode(403);
+            response.setStatusMessage("Forbidden");
+            response.setBodyFromFile(server.getRoot() + server.getErrorPage403());
+            return;
+        }
+    }
 
     if (checkCgiMatch(location, server, filePath)) {
         if (!fileExistsAndAccessible(filePath, F_OK)) {
