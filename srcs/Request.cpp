@@ -137,7 +137,11 @@ std::string determineContentType(const std::string &filePath) {
             return "text/css";
         } else if (extension == "js") {
             return "application/javascript";
-        }
+        } else if (extension == "txt") {
+			return "text/plain";
+		} else if (extension == "pdf") {
+			return "application/pdf";
+		}
     }
     return "application/octet-stream";
 }
@@ -146,12 +150,12 @@ Location* Request::checkLocation(Server &server) const {
     std::vector<Location> locations = server.getLocations();
 
     for (size_t i = 0; i < locations.size(); i++) {
-        std::cout << "Request path : " << path << ", Location path : " << locations[i].getPath() << std::endl;
-        if (path.find(locations[i].getPath()) == 0) {
+        // std::cout << "Request path : " << path << ", Location path : " << locations[i].getPath() << std::endl;
+        if (path == locations[i].getPath()) {
+            // std::cout << "Location found: " << locations[i].getPath() << std::endl;
             return new Location(locations[i]);
         }
     }
-
     return NULL;
 }
 
@@ -179,9 +183,6 @@ std::string Request::generateResponse(Server &server) const {
     Response response(200, "OK");
     Location* location = checkLocation(server);
     std::string filePath = getFilePath(location, server);
-
-    // std::cout << "location found: " << *location;
-
     if (checkMethod(location, server, "GET")) {
         handleGetRequest(server, response, location, filePath);
     } else if (checkMethod(location, server, "POST")) {
@@ -369,6 +370,7 @@ void Request::handlePostRequest(Server &server, Response &response, Location *lo
 void Request::handleDeleteRequest(Server &server, Response &response, Location *location, std::string filePath) const {
     (void)location; //remove the line after you start to use the variable
 
+	std::cout << "Delete request for file: " << filePath << std::endl;
     if (!fileExistsAndAccessible(filePath, F_OK)) {
 		response.setResponseError(response, server, 404, "Not Found", server.getErrorPage404());
     } else if (!fileExistsAndAccessible(filePath, W_OK)) {
