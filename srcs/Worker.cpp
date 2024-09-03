@@ -4,30 +4,38 @@
 #define BUFFER_LENGHT 1024
 
 
+void set_nonblocking(int fd) {
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags == -1) {
+        perror("fcntl F_GETFL");
+        throw std::runtime_error("error for fcntl");
+    }
+    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+        perror("fcntl F_SETFL");
+        throw std::runtime_error("error for fcntl");
+    }
+}
+
 Worker::Worker(const std::vector<Server>& servers) {
     this->running = 1;
     this->servers = servers;
 
     for (size_t i = 0; i < servers.size(); i++) {
-        try {
-            bool alreadyBound = false;
-            for (size_t j = 0; j < listeningSockets.size(); j++) {
-                if (listeningSockets[j].getIp() == hostToIp(servers[i].getHost()) &&
-                    listeningSockets[j].getPort() == servers[i].getListen()) {
-                    alreadyBound = true;
-                    std::cout << servers[i] << std::endl;
-                    break;
-                }
+        bool alreadyBound = false;
+        for (size_t j = 0; j < listeningSockets.size(); j++) {
+            if (listeningSockets[j].getIp() == hostToIp(servers[i].getHost()) &&
+                listeningSockets[j].getPort() == servers[i].getListen()) {
+                alreadyBound = true;
+                std::cout << servers[i] << std::endl;
+                break;
             }
+        }
 
-            if (!alreadyBound) {
-                Socket socket = Socket(servers[i]);
-                listeningSockets.push_back(socket);
-                epollHandler.addFd(socket.getSocketFd(), EPOLLIN | EPOLLOUT);
-            }
-
-        } catch (const std::exception& e) {
-            std::cerr << e.what() << '\n';
+        if (!alreadyBound) {
+            Socket socket = Socket(servers[i]);
+            listeningSockets.push_back(socket);
+            set_nonblocking(socket.getSocketFd());
+            epollHandler.addFd(socket.getSocketFd(), EPOLLIN | EPOLLOUT);
         }
     }
     if (listeningSockets.size() == 0)
@@ -36,7 +44,7 @@ Worker::Worker(const std::vector<Server>& servers) {
     int efd = eventfd(0, 0);
     if (efd == -1) {
         perror("eventfd");
-        return;
+        throw std::runtime_error("Error for efd creation");
     }
     epollHandler.addFd(efd, EPOLLIN | EPOLLOUT);
     SignalHandler::getInstance().setupSignalHandlers(&running, efd);
@@ -56,6 +64,31 @@ void	Worker::closeSockets()
     }
 }
 
+
+void Worker::checkTimeouts() {
+    const int timeoutDuration = 10; // Example timeout duration in seconds
+
+    time_t currentTime = std::time(NULL); // Get the current time
+
+    for (std::vector<Client>::iterator clientIt = clientSockets.begin(); clientIt != clientSockets.end(); ) {
+        if (clientIt->getRequestObject() != NULL) {
+            Request* req = clientIt->getRequestObject();
+            double elapsedTime = std::difftime(currentTime, req->getStartTime());
+            if (elapsedTime > timeoutDuration) {
+                // Timeout detected
+                std::cout << "Request timed out for client: " << clientIt->getFd() << std::endl;
+                epollHandler.removeFd(clientIt->getFd());
+                clientSockets.erase(clientIt);
+                close(clientIt->getFd());
+            } else {
+                ++clientIt;
+            }
+        } else {
+            ++clientIt;
+        }
+    }
+}
+
 void Worker::run()
 {
     if (listeningSockets.size() == 0)
@@ -66,6 +99,7 @@ void Worker::run()
             std::vector<struct epoll_event> events = epollHandler.waitForEvents();
             if (!running)
                 break ;
+            checkTimeouts();
             for (size_t i = 0; i < events.size(); i++) {
                 if (events[i].events & EPOLLIN) {
                     std::vector<Socket>::iterator socket = std::find(listeningSockets.begin(), listeningSockets.end(), events[i].data.fd);
@@ -107,6 +141,7 @@ void Worker::handleNewConnection(Socket &socket) {
         return;
     }
 
+    set_nonblocking(clientSocket);
     epollHandler.addFd(clientSocket, EPOLLIN | EPOLLOUT);
     if (clientAddr.ss_family == AF_INET) {
         struct sockaddr_in *s = (struct sockaddr_in *)&clientAddr;
@@ -126,9 +161,60 @@ void Worker::handleNewConnection(Socket &socket) {
     std::cout << "Accepted new connection on socket " << socket.getSocketFd() << ", created tcp connection with fd " << clientSocket << std::endl;
 }
 
-bool Worker::isCompleteRequest(const std::string& request) {
-    // For HTTP, you might check for the end of the headers (double CRLF \r\n\r\n)
-    return request.find("\r\n\r\n") != std::string::npos;
+bool Worker::isCompleteRequest(Client& client) {
+
+    if (client.getRequestObject() == NULL) {
+        client.setRequestObject(new Request(client.getRequest()));
+    }
+    // Find the end of the headers section
+    size_t headerEnd = client.getRequest().find("\r\n\r\n");
+    if (headerEnd == std::string::npos) {
+        // If we don't find the end of the headers, the request isn't complete
+        return false;
+    }
+
+    // At this point, we have all the headers
+    size_t bodyStart = headerEnd + 4; // Move past the "\r\n\r\n"
+
+    // Parse and fill headers in the Request object
+    if (client.getRequestObject()->getHeaders().empty()) {  // Check if headers are not yet filled
+        client.getRequestObject()->parseHeaders(client.getRequest());
+    }
+
+    // Check for a Content-Length header to determine if we need to wait for a body
+    std::map<std::string, std::string> headers = client.getRequestObject()->getHeaders();
+
+    if (headers.find("Content-Length") != headers.end()) {
+        // Extract the Content-Length value
+        int contentLength = atoi(headers["Content-Length"].c_str());
+
+
+        // Check if we have received all the body data
+        if (client.getRequest().size() >= bodyStart + contentLength) {
+            // If body is complete, set it in the Request object
+            client.getRequestObject()->setBody(client.getRequest().substr(bodyStart, contentLength));
+            return true; // Complete request with body
+        } else {
+            return false; // Incomplete request, waiting for more body data
+        }
+    }
+
+    // Check for Transfer-Encoding: chunked
+    if (headers.find("Transfer-Encoding") != headers.end() &&
+        headers["Transfer-Encoding"] == "chunked") {
+        // Search for the end of the chunked transfer
+        size_t chunkEnd = client.getRequest().find("0\r\n\r\n", bodyStart);
+        if (chunkEnd != std::string::npos) {
+            // If chunked body is complete, set it in the Request object
+            client.getRequestObject()->setBody(client.getRequest().substr(bodyStart, chunkEnd - bodyStart));
+            return true;
+        } else {
+            return false; // Incomplete request, waiting for more chunked data
+        }
+    }
+
+    // If there's no Content-Length or chunked encoding, assume the request is complete
+    return true;
 }
 
 std::string Worker::hostToIp(std::string host) {
@@ -205,32 +291,39 @@ void Worker::assignServerToClient(const Request& request, Client &client) {
 
 void Worker::handleClientData(Client &client) {
     char buffer[BUFFER_LENGHT];
-    std::string rawRequest;
     int bytesRead;
 
+    std::cout << "test" << std::endl;
+
     while ((bytesRead = recv(client.getFd(), buffer, sizeof buffer, 0)) > 0) {
-        rawRequest.append(buffer, bytesRead);
-        if (isCompleteRequest(rawRequest) || rawRequest.length() < BUFFER_LENGHT) {
+        client.setRequest(client.getRequest().append(buffer, bytesRead));
+        if (isCompleteRequest(client) || bytesRead < BUFFER_LENGHT) {
             break;
         }
     }
 
     std::cout << "bytes read : " << bytesRead << std::endl;
+    std::cout << "message got = " << client.getRequest() << std::endl;
+    // std::cout << "Request = " << client.getRequestObject() << std::endl;
 
-    if (bytesRead <= 0) {
+    if (bytesRead == 0) {
         epollHandler.removeFd(client.getFd());
         clientSockets.erase(std::find(clientSockets.begin(), clientSockets.end(), client.getFd()));
         close(client.getFd());
         std::cout << "Connection closed on socket " << client.getFd() << std::endl;
+    } else if (bytesRead < 0) {
+        return ;
     } else {
-        std::cout << "message got = " << rawRequest << std::endl;
         try
         {
-            Request request = Request(rawRequest);
             if (!client.hasServer()) {
-                assignServerToClient(request, client);
+                assignServerToClient(*client.getRequestObject(), client);
             }
-            client.setResponse(request.generateResponse(*client.getServer()));
+            if (isCompleteRequest(client)) {
+                client.setResponse(client.getRequestObject()->generateResponse(*client.getServer()));
+                client.getRequest().clear();
+                delete client.getRequestObject();
+            }
         }
         catch (const InvalidHttpRequestException& e)
         {
@@ -250,7 +343,7 @@ void Worker::handleWritableData(Client &client) {
         int bytesSent = send(client.getFd(), response.c_str(), response.size(), 0);
 
         if (bytesSent == -1) {
-            throw std::runtime_error("send error");
+            return ;
         } else {
             // std::cout << "response sent = " << response << std::endl;
             response.erase(0, bytesSent);

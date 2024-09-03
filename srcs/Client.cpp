@@ -1,12 +1,14 @@
 #include "Client.hpp"
 
-Client::Client() : fd(-1), host(""), port(""), server(NULL) {}
+Client::Client() : fd(-1), host(""), port(""), server(NULL), requestObject(NULL) {}
 
 Client::~Client() {
+    if (requestObject != NULL)
+        delete requestObject;
 }
 
 Client::Client(int fd, std::string host, std::string port, Socket socket)
-    : fd(fd), host(host), port(port), socket(socket), server(NULL){}
+    : fd(fd), host(host), port(port), socket(socket), server(NULL), requestObject(NULL) {}
 
 Client::Client(const Client &client) {
     *this = client;
@@ -21,6 +23,7 @@ Client &Client::operator=(const Client &client) {
         request = client.request;
         response = client.response;
         server = client.server;
+        requestObject = client.requestObject;
     }
     return *this;
 }
@@ -39,6 +42,10 @@ std::string Client::getPort() const {
 
 Server* Client::getServer() const {
     return server;
+}
+
+Request* Client::getRequestObject() const {
+    return requestObject;
 }
 
 Socket Client::getSocket() const {
@@ -67,6 +74,10 @@ void Client::setPort(std::string port) {
 
 void Client::setServer(Server *server) {
     this->server = server;
+}
+
+void Client::setRequestObject(Request *requestObject) {
+    this->requestObject = requestObject;
 }
 
 void Client::setSocket(Socket socket) {
