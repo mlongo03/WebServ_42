@@ -324,70 +324,66 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
 }
 
 void Request::handlePostRequest(Server &server, Response &response, Location *location, std::string filePath) const {
-	  
-  if (isDirectory(filePath)) {
-        if (!fileExistsAndAccessible(filePath, R_OK)) {
-          	response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
+
+    // Check if the request is for a CGI script
+    if (checkCgiMatch(location, server, filePath)) {
+        std::vector<std::string> extensions = getCgiExtension(location, server);
+
+        if (!fileExistsAndAccessible(filePath, F_OK)) {
+            response.setResponseError(response, server, 404, "Not Found", server.getErrorPage404());
             return;
-        }
-      //Da implementare
-  }
-  
-  if (checkCgiMatch(location, server, filePath)) {
-		std::vector<std::string> extensions = getCgiExtension(location, server);
-
-		if (!fileExistsAndAccessible(filePath, F_OK)) {
-			response.setResponseError(response, server, 404, "Not Found", server.getErrorPage404());
-			return;
-		} else if (!fileExistsAndAccessible(filePath, R_OK)) {
-			response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
-			return;
-		} else if (!fileExistsAndAccessible(filePath, X_OK)) {
-			response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
-			return;
-		} else {
-			try
-			{
-				Cgi cgiHandler(filePath, extensions, *this);
-				cgiHandler.prepareEnvVars(*this);
-				cgiHandler.execute(response, server, *this);
-			}
-			catch (const std::exception &e) {
-				response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
-			}
-		}
-		return;
-	}
-
-    // Determine the target directory for uploaded files
-    // std::string uploadDir = (location && !location->getUploadDir().empty()) ? location->getUploadDir() : server.getUploadDir();
-    std::string uploadDir = "";
-
-    // Check if the directory exists, create it if not
-    if (!fileExistsAndAccessible(uploadDir, F_OK)) {
-        if (mkdir(uploadDir.c_str(), 0755) != 0) {
-			response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+        } else if (!fileExistsAndAccessible(filePath, R_OK)) {
+            response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
             return;
+        } else if (!fileExistsAndAccessible(filePath, X_OK)) {
+            response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
+            return;
+        } else {
+            // Execute the CGI script
+            try {
+                Cgi cgiHandler(filePath, extensions, *this);
+                cgiHandler.prepareEnvVars(*this);
+                cgiHandler.execute(response, server, *this);
+            } catch (const std::exception &e) {
+                response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+            }
         }
+        return;
     }
 
-    // Determine the file path for the uploaded data
-    std::string filePathOut = uploadDir + "/uploaded_data.txt";
+    // Handle file upload if the route is configured with upload_dir
+    std::string uploadDir = location->getUploadDir();
 
-    // Check if the file is writable or does not exist (meaning we can create it)
-    if (fileExistsAndAccessible(filePathOut, W_OK) || !fileExistsAndAccessible(filePathOut, F_OK)) {
-        std::ofstream outFile(filePathOut.c_str());
-        if (outFile) {
-            outFile << body; // Write the request body to the file
-            outFile.close();
-            response.setStatusCode(201);
-            response.setStatusMessage("Created");
-            response.setBodyFromString("<html><body><h1>201 Created</h1></body></html>");
+    // Check if the upload directory is defined and accessible
+    if (!uploadDir.empty()) {
+        // Ensure the upload directory exists
+        if (!fileExistsAndAccessible(uploadDir, F_OK)) {
+            if (mkdir(uploadDir.c_str(), 0755) != 0) {
+                response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+                return;
+            }
+        }
+
+        // Construct the output file path for the uploaded data
+        std::string filePathOut = uploadDir + "/uploaded_data.txt"; // Can modify to generate unique filenames
+
+        // Check if the file is writable or does not exist (meaning we can create it)
+        if (fileExistsAndAccessible(filePathOut, W_OK) || !fileExistsAndAccessible(filePathOut, F_OK)) {
+            std::ofstream outFile(filePathOut.c_str());
+            if (outFile) {
+                outFile << body; // Write the request body to the file
+                outFile.close();
+                response.setStatusCode(201);
+                response.setStatusMessage("Created");
+                response.setBodyFromString("<html><body><h1>201 Created</h1></body></html>");
+            } else {
+                response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+            }
         } else {
-			response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+            response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
         }
     } else {
-		response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
+        response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
     }
 }
 
@@ -414,7 +410,6 @@ void Request::handleUnsupportedMethod(Server &server, Response &response) const 
     response.setBodyFromFile(server.getRoot() + server.getErrorPage405());
 }
 
-
 std::map<std::string, std::string> Request::getQueryParameters() const {
 	return queryParameters;
 }
@@ -430,7 +425,6 @@ void Request::printHeaders(const std::map<std::string, std::string > &headers ) 
 		std::cout << it->first << ": " << it->second << std::endl;
 	}
 }
-
 
  std::string Request::getContentType() const {
         std::map<std::string, std::string>::const_iterator it = headers.find("Content-Type");

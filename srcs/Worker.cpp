@@ -64,7 +64,6 @@ void	Worker::closeSockets()
     }
 }
 
-
 void Worker::checkTimeouts() {
     const int timeoutDuration = 10; // Example timeout duration in seconds
 
@@ -216,6 +215,7 @@ bool Worker::isCompleteRequest(Client& client) {
     }
 
     // If there's no Content-Length or chunked encoding, assume the request is complete
+    client.getRequestObject()->setBody(client.getRequest().substr(bodyStart));
     return true;
 }
 
@@ -295,8 +295,6 @@ void Worker::handleClientData(Client &client) {
     char buffer[BUFFER_LENGHT];
     int bytesRead;
 
-    std::cout << "test" << std::endl;
-
     while ((bytesRead = recv(client.getFd(), buffer, sizeof buffer, 0)) > 0) {
         client.setRequest(client.getRequest().append(buffer, bytesRead));
         if (isCompleteRequest(client) || bytesRead < BUFFER_LENGHT) {
@@ -306,7 +304,6 @@ void Worker::handleClientData(Client &client) {
 
     std::cout << "bytes read : " << bytesRead << std::endl;
     std::cout << "message got = " << client.getRequest() << std::endl;
-    // std::cout << "Request = " << client.getRequestObject() << std::endl;
 
     if (bytesRead == 0) {
         epollHandler.removeFd(client.getFd());
