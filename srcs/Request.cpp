@@ -1,7 +1,12 @@
 #include "Request.hpp"
 #include "Utils.hpp"
-Request::Request(const std::string& rawRequest) {
+
+Request::Request(const std::string& rawRequest)  : start_time(std::time(NULL)){
     parseRequest(rawRequest);
+}
+
+time_t Request::getStartTime() const {
+    return start_time;
 }
 
 std::vector<std::string> splitBySpaces(const std::string& str) {
@@ -54,31 +59,37 @@ void Request::parseRequest(const std::string& rawRequest) {
         path = path.substr(0, queryPos);
     }
 
-    std::string headerLine;
-    while (std::getline(requestStream, headerLine) && headerLine != "\r") {
-        size_t delimiterPos = headerLine.find(":");
-        if (delimiterPos == std::string::npos) {
-            throw InvalidHttpRequestException("Malformed header: " + headerLine);
-        }
-        std::string headerName = headerLine.substr(0, delimiterPos);
-        std::string headerValue = headerLine.substr(delimiterPos + 1);
-        headers[headerName] = headerValue;
-    }
-
-    body = std::string(std::istreambuf_iterator<char>(requestStream), std::istreambuf_iterator<char>());
 }
 
-void Request::parseHeaders(const std::string& headersPart) {
-    std::istringstream headersStream(headersPart);
-    std::string headerLine;
-    while (std::getline(headersStream, headerLine)) {
-        std::string::size_type colonPos = headerLine.find(':');
-        if (colonPos != std::string::npos) {
-            std::string key = headerLine.substr(0, colonPos);
-            std::string value = headerLine.substr(colonPos + 1);
-            value.erase(0, value.find_first_not_of(' ')); // Trim leading spaces
-            headers[key] = value;
+void Request::parseHeaders(const std::string& rawRequest) {
+    std::stringstream requestStream(rawRequest);
+    std::string line;
+
+    // Skip the request line (the first line)
+    if (!std::getline(requestStream, line)) {
+        throw InvalidHttpRequestException("Request line is missing");
+    }
+
+    // Parse headers
+    while (std::getline(requestStream, line) && !line.empty() && line != "\r") {
+        // Remove the carriage return character if it's there
+        if (!line.empty() && line[line.size() - 1] == '\r') {
+            line.erase(line.size() - 1);
         }
+
+        size_t colonPos = line.find(':');
+        if (colonPos == std::string::npos) {
+            throw InvalidHttpRequestException("Malformed header line: " + line);
+        }
+
+        std::string headerName = line.substr(0, colonPos);
+        std::string headerValue = line.substr(colonPos + 1);
+
+        // Remove leading and trailing whitespace from the header value
+        headerValue.erase(0, headerValue.find_first_not_of(" \t"));
+        headerValue.erase(headerValue.find_last_not_of(" \t") + 1);
+
+        headers[headerName] = headerValue;
     }
 }
 
@@ -258,6 +269,10 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
     // std::cout << "complete file path : " << filePath << std::endl;
 
     if (isDirectory(filePath)) {
+        if (!fileExistsAndAccessible(filePath, R_OK)) {
+          	response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
+            return;
+        }
         if (checkIndexExistence(location, server)) {
             std::string tmpfilePath = filePath + (filePath[filePath.size() - 1] != '/' ? "/" : "") + getIndex(location, server);
             if (checkAutoindexStatus(location, server) && (!fileExistsAndAccessible(tmpfilePath, F_OK) || !fileExistsAndAccessible(tmpfilePath, R_OK))) {
@@ -309,7 +324,16 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
 }
 
 void Request::handlePostRequest(Server &server, Response &response, Location *location, std::string filePath) const {
-	if (checkCgiMatch(location, server, filePath)) {
+	  
+  if (isDirectory(filePath)) {
+        if (!fileExistsAndAccessible(filePath, R_OK)) {
+          	response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
+            return;
+        }
+      //Da implementare
+  }
+  
+  if (checkCgiMatch(location, server, filePath)) {
 		std::vector<std::string> extensions = getCgiExtension(location, server);
 
 		if (!fileExistsAndAccessible(filePath, F_OK)) {
@@ -395,6 +419,9 @@ std::map<std::string, std::string> Request::getQueryParameters() const {
 	return queryParameters;
 }
 
+void Request::setBody(std::string body) {
+    this->body = body;
+}
 
 void Request::printHeaders(const std::map<std::string, std::string > &headers ) const
 {
@@ -412,4 +439,3 @@ void Request::printHeaders(const std::map<std::string, std::string > &headers ) 
         }
         return "";
     }
-

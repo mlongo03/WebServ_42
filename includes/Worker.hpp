@@ -1,6 +1,7 @@
 #ifndef Worker_HPP
 #define Worker_HPP
 
+#include <ctime> // For time_t and difftime
 #include "Global.hpp"
 #include "Server.hpp"
 #include "Epoll.hpp"
@@ -19,14 +20,14 @@ public:
     void run();
 
 private:
-    void createSocket(const Server& server);
     void handleNewConnection(Socket &socket);
     void handleClientData(Client &client);
     void handleWritableData(Client &client);
     void closeSockets();
     void assignServerToClient(const Request& request, Client &client);
-    bool isCompleteRequest(const std::string& request);
+    bool isCompleteRequest(Client& client);
     std::string hostToIp(std::string host);
+    void checkTimeouts();
 
     std::vector<Socket> listeningSockets;
     std::vector<Client> clientSockets;

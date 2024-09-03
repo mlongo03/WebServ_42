@@ -9,6 +9,7 @@
 #include <vector>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <ctime>
 #include "Exception.hpp"
 #include "Server.hpp"
 #include "Response.hpp"
@@ -23,6 +24,7 @@ class Request {
 		std::map<std::string, std::string> headers;
 		std::string body;
 		std::map<std::string, std::string> queryParameters;
+    time_t start_time;
 
 	public:
 		Request(const std::string& rawRequest);
@@ -32,12 +34,12 @@ class Request {
 		std::string getHttpVersion() const;
 		std::map<std::string, std::string> getHeaders() const;
 		std::string getBody() const;
+    void setBody(std::string body);
 		std::string generateResponse(Server &server) const;
 		std::map<std::string, std::string> getQueryParameters() const;
-
-
+  
 		void parseRequest(const std::string& rawRequest);
-		void parseHeaders(const std::string& headersPart);
+		void parseHeaders(const std::string& rawRequest);
 		void handleGetRequest(Server &server, Response &response, Location *location, std::string filePath) const;
 		void handlePostRequest(Server &server, Response &response, Location *location, std::string filePath) const;
 		void handleDeleteRequest(Server &server, Response &response, Location *location, std::string filePath) const;
@@ -49,6 +51,7 @@ class Request {
 		bool checkMethod(Location *location, Server &server, const std::string& methodToCheck) const;
 		void printHeaders(const std::map<std::string, std::string > &headers ) const;
 		std::string getContentType() const;
+    time_t getStartTime() const;
 };
 
 #endif

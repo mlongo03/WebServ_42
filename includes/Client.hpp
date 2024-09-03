@@ -5,6 +5,7 @@
 #include "Server.hpp"
 #include "Socket.hpp"
 #include "Response.hpp"
+#include "Request.hpp"
 
 class Client {
 public:
@@ -19,6 +20,7 @@ public:
     std::string getHost() const;
     std::string getPort() const;
     Server* getServer() const;
+    Request* getRequestObject() const;
     Socket getSocket() const;
     std::string getRequest() const;
     std::string getResponse() const;
@@ -26,6 +28,7 @@ public:
     void setHost(std::string host);
     void setPort(std::string port);
     void setServer(Server *server);
+    void setRequestObject(Request *requestObject);
     void setSocket(Socket socket);
     void setRequest(std::string request);
     void setResponse(std::string response);
@@ -41,8 +44,7 @@ private:
     std::string request;
     std::string response;
     Server *server;
-	// std>>string request;
-	// std::string response;
+    Request *requestObject;
 };
 
 std::ostream& operator<<(std::ostream& os, const Client& client);
