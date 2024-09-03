@@ -2,10 +2,10 @@
 
 use strict;
 use warnings;
-use CGI;
+# use CGI;
 
 sub handle_get {
-    my $cgi = CGI->new;
+    # my $cgi = CGI->new;
 
     # Prepare the response body
     my $response_body = "<html><head><title>GET Request</title></head><body>";

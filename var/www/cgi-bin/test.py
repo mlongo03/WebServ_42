@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import sys
 
 def handle_get():
     method = os.environ.get("METHOD")

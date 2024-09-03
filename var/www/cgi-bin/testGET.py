@@ -13,6 +13,7 @@ def handle_get():
 				<body>
 				<h1>Hello, World!</h1>
 				<p>This is a response from a CGI script for a {method} request.</p>
+				<p>Environment variables of the {method}:</p>
 				"""
     for key, values in os.environ.items():
         response_body += f"<p>{key}: {values}</p>\n"

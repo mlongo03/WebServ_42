@@ -24,10 +24,14 @@ def handle_post():
     <ul>
     """
     for key, values in params.items():
-        response_body += f"<li>{key}: {', '.join(values)}</li>\n"
-
+        response_body += f"    <li>{key}: {', '.join(values)}</li>\n"
+    response_body += "    </ul>\n"
+    response_body += "    <p>Environment variables of the POST:</p>\n"
+    response_body += "    <ul>\n"
+    for key, values in os.environ.items():
+        response_body += f"    <li>{key}: {values}</li>\n"
+    response_body += "    </ul>\n"
     response_body += """
-    </ul>
     </body>
     </html>
     """
@@ -36,29 +40,10 @@ def handle_post():
     response_content_length = len(response_body)
 
     # Set up headers for the response
-    print(f"Status: 200 OK\r\nContent-Type: text/html\r\nContent-Length: {response_content_length}\r\n\r\n")
+    print(f"Status: 200 OK\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: {response_content_length}\r\n\r\n")
 
     # Output the response body
     print(response_body)
 
-def main():
-    method = os.environ.get('REQUEST_METHOD', 'GET')
-    if method == 'POST':
-        handle_post()
-    else:
-        # If the request method is not POST, return a 405 Method Not Allowed response
-        response_body = """
-        <html>
-        <head><title>405 Method Not Allowed</title></head>
-        <body>
-        <h1>405 Method Not Allowed</h1>
-        <p>This server only handles POST requests.</p>
-        </body>
-        </html>
-        """
-        response_content_length = len(response_body)
-        print(f"Status: 405 Method Not Allowed\r\nContent-Type: text/html\r\nContent-Length: {response_content_length}\r\n\r\n")
-        print(response_body)
-
 if __name__ == "__main__":
-    main()
+    handle_post()

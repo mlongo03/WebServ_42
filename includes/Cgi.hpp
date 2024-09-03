@@ -15,7 +15,16 @@
 #include <sstream>
 #include "Utils.hpp"
 #include "Response.hpp"
+#include "Request.hpp"
+#include "Server.hpp"
 
+enum RequestType {
+    GET_REQUEST,
+    POST_REQUEST
+};
+
+class Server;
+class Request;
 class Response;
 
 class Cgi {
@@ -35,7 +44,7 @@ class Cgi {
 		Cgi &operator=(const Cgi &src);
 		~Cgi();
 
-		Cgi(const std::string & path_info, const std::vector<std::string> &extensions);
+		Cgi(const std::string &path, const std::vector<std::string> &extensions,const Request &request);
 
 		//getters
 		std::string getScriptName() const;
@@ -51,8 +60,7 @@ class Cgi {
 		void setBody(const std::string &requestBody);
 		void setScriptName(const std::string &path);
 		void setPath_info (const std::string &path);
-		bool isCgiRequest(const std::string &url);
-		void prepareEnvVars(const std::string &postBody, const std::string &contentType);
+		void prepareEnvVars(const Request &request);
 		void setQueryParameters(const std::map<std::string, std::string> &params);
 
 		// Convert map of environment variables to char* array for execve
@@ -60,8 +68,8 @@ class Cgi {
 
 		void extract_script_name(const std::string &path);
 		// std::string handleCgiRequest(Cgi &cgi, const std::string &getMethod, const std::string &postBody, const std::string &contentType);
-		void	execute(Response &response, Server &server);
-		bool check_correct_header(std::string &result, Response &response, Server &server);
+		void	execute(Response &response, Server &server, const Request &request);
+		bool check_correct_header(std::string &result, Response &response, Server &server,const Request &request);
 		std::string getBodyFromResponse(const std::string& response);
 };
 
