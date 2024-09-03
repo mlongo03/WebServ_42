@@ -73,7 +73,9 @@ void Worker::checkTimeouts() {
     for (std::vector<Client>::iterator clientIt = clientSockets.begin(); clientIt != clientSockets.end(); ) {
         if (clientIt->getRequestObject() != NULL) {
             Request* req = clientIt->getRequestObject();
+            std::cout << "Before : " << req << std::endl;
             double elapsedTime = std::difftime(currentTime, req->getStartTime());
+            std::cout << "After" << std::endl;
             if (elapsedTime > timeoutDuration) {
                 // Timeout detected
                 std::cout << "Request timed out for client: " << clientIt->getFd() << std::endl;
@@ -321,8 +323,9 @@ void Worker::handleClientData(Client &client) {
             }
             if (isCompleteRequest(client)) {
                 client.setResponse(client.getRequestObject()->generateResponse(*client.getServer()));
-                client.getRequest().clear();
+                client.clearRequest();
                 delete client.getRequestObject();
+                client.setRequestObject(NULL);
             }
         }
         catch (const InvalidHttpRequestException& e)

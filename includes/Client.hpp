@@ -33,6 +33,7 @@ public:
     void setRequest(std::string request);
     void setResponse(std::string response);
     void clearResponse();
+    void clearRequest();
     bool hasServer() const;
 	bool operator==(int socket);
 
