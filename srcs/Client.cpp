@@ -96,6 +96,10 @@ void Client::clearResponse() {
     response.clear();
 }
 
+void Client::clearRequest() {
+    request.clear();
+}
+
 bool Client::hasServer() const {
     return server != NULL;
 }

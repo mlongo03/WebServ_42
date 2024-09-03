@@ -24,7 +24,7 @@ class Request {
 		std::map<std::string, std::string> headers;
 		std::string body;
 		std::map<std::string, std::string> queryParameters;
-    time_t start_time;
+        time_t start_time;
 
 	public:
 		Request(const std::string& rawRequest);
@@ -37,7 +37,7 @@ class Request {
     void setBody(std::string body);
 		std::string generateResponse(Server &server) const;
 		std::map<std::string, std::string> getQueryParameters() const;
-  
+
 		void parseRequest(const std::string& rawRequest);
 		void parseHeaders(const std::string& rawRequest);
 		void handleGetRequest(Server &server, Response &response, Location *location, std::string filePath) const;
@@ -51,7 +51,7 @@ class Request {
 		bool checkMethod(Location *location, Server &server, const std::string& methodToCheck) const;
 		void printHeaders(const std::map<std::string, std::string > &headers ) const;
 		std::string getContentType() const;
-    time_t getStartTime() const;
+        time_t getStartTime() const;
 };
 
 #endif
