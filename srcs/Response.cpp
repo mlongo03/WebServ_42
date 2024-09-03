@@ -63,3 +63,10 @@ void Response::setDefaultErrorBody() {
     body = bodyStream.str();
     setContentLength(body.size());
 }
+
+
+void Response::setResponseError(Response& response, Server& server, int statusCode, const std::string& statusMessage, const std::string& errorPage) {
+    response.setStatusCode(statusCode);
+    response.setStatusMessage(statusMessage);
+    response.setBodyFromFile(server.getRoot() + errorPage);
+}

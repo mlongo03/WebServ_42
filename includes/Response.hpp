@@ -6,6 +6,9 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include "Server.hpp"
+
+class Server;
 
 class Response {
 private:
@@ -26,6 +29,7 @@ public:
 
     std::string generateResponse() const;
     void setDefaultErrorBody();
+	void setResponseError(Response& response, Server& server, int statusCode, const std::string& statusMessage, const std::string& errorPage);
 };
 
 #endif

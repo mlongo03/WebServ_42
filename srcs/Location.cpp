@@ -22,6 +22,8 @@ Location &Location::operator=(const Location &rhs)
 		autoindex = rhs.autoindex;
 		root = rhs.root;
 		_cgi_extension = rhs._cgi_extension;
+		upload_dir = rhs.upload_dir;
+		return_map = rhs.return_map;
 	}
 	return *this;
 }
@@ -62,6 +64,15 @@ std::vector<std::string> Location::getCgiExtension() const
 	return _cgi_extension;
 }
 
+std::string Location::getUploadDir() const
+{
+	return upload_dir;
+}
+
+std::map<int, std::string> Location::getReturnMap() const
+{
+	return return_map;
+}
 
 //setters
 void Location::setIndex(const std::string &index)
@@ -94,6 +105,16 @@ void Location::setCgiExtension(const std::vector<std::string>  &cgi_extension)
 	this->_cgi_extension = cgi_extension;
 }
 
+void Location::setUploadDir(const std::string &upload_dir)
+{
+	this->upload_dir = upload_dir;
+}
+
+void Location::setReturnMap(const std::map<int, std::string> &return_map)
+{
+	this->return_map = return_map;
+}
+
 
 std::ostream &operator<<(std::ostream &os, const Location &location)
 {
@@ -101,7 +122,14 @@ std::ostream &operator<<(std::ostream &os, const Location &location)
 	os << "    Location: |" << location.getPath() << "|" << std::endl;
 	os << "      autoindex: |" <<( location.getAutoindex() == true ? "on" : "off" ) << "|" << std::endl;
 	os << "      root: |" << location.getRoot() << "|" << std::endl;
-
+	os << "      upload_dir: |" << location.getUploadDir() << "|" << std::endl;
+	os << "      return_map: ";
+	std::map<int, std::string> return_map = location.getReturnMap();
+	for (std::map<int, std::string>::const_iterator it = return_map.begin(); it != return_map.end(); ++it) {
+		const std::pair<int, std::string> &pair = *it;
+		os << "|" << pair.first << "| |" << pair.second << "| ";
+	}
+	os << std::endl;
 	os << "      allow: ";
 	std::vector<std::string> allow = location.getAllow();
 	for (std::vector<std::string>::const_iterator it = allow.begin(); it != allow.end(); ++it) {
