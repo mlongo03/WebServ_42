@@ -187,18 +187,25 @@ bool containsString(const std::vector<std::string>& vec, const std::string& str)
 }
 
 bool Request::checkMethod(Location *location, Server &server, const std::string& methodToCheck) const {
-    return (method == methodToCheck && (location != NULL ? (location->getAllow().size() == 0 ? containsString(server.getAllow(), methodToCheck) : containsString(location->getAllow(), methodToCheck)) : containsString(server.getAllow(), methodToCheck)));
+	return (method == methodToCheck && (location != NULL ? (location->getAllow().size() == 0 ? containsString(server.getAllow(), methodToCheck) : containsString(location->getAllow(), methodToCheck)) : containsString(server.getAllow(), methodToCheck)));
 }
 
 std::string Request::generateResponse(Server &server) const {
     Response response(200, "OK");
     Location* location = checkLocation(server);
     std::string filePath = getFilePath(location, server);
+	std::cout << "File path: " << filePath << std::endl;
+	if (location != NULL) {
+		std::cout << " location path is " << location->getPath() << std::endl;
+	} else {
+		std::cout << " location is null" << std::endl;
+	}
     if (checkMethod(location, server, "GET")) {
         handleGetRequest(server, response, location, filePath);
     } else if (checkMethod(location, server, "POST")) {
         handlePostRequest(server, response, location, filePath);
     } else if (checkMethod(location, server, "DELETE")) {
+		std::cout<<"DELETE REQUEST"<<std::endl;
         handleDeleteRequest(server, response, location, filePath);
     } else {
         handleUnsupportedMethod(server, response);
@@ -324,7 +331,7 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
 }
 
 void Request::handlePostRequest(Server &server, Response &response, Location *location, std::string filePath) const {
-	  
+
   if (isDirectory(filePath)) {
         if (!fileExistsAndAccessible(filePath, R_OK)) {
           	response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
@@ -332,7 +339,7 @@ void Request::handlePostRequest(Server &server, Response &response, Location *lo
         }
       //Da implementare
   }
-  
+
   if (checkCgiMatch(location, server, filePath)) {
 		std::vector<std::string> extensions = getCgiExtension(location, server);
 
@@ -394,6 +401,11 @@ void Request::handlePostRequest(Server &server, Response &response, Location *lo
 void Request::handleDeleteRequest(Server &server, Response &response, Location *location, std::string filePath) const {
     (void)location; //remove the line after you start to use the variable
 
+	if(isDirectory(filePath)) {
+		response.setResponseError(response, server, 405, "Method Not Allowed", server.getErrorPage403());
+		return;
+	}
+
 	std::cout << "Delete request for file: " << filePath << std::endl;
     if (!fileExistsAndAccessible(filePath, F_OK)) {
 		response.setResponseError(response, server, 404, "Not Found", server.getErrorPage404());
@@ -409,9 +421,10 @@ void Request::handleDeleteRequest(Server &server, Response &response, Location *
 }
 
 void Request::handleUnsupportedMethod(Server &server, Response &response) const {
-    response.setStatusCode(405);
-    response.setStatusMessage("Method Not Allowed");
-    response.setBodyFromFile(server.getRoot() + server.getErrorPage405());
+	response.setResponseError(response, server, 405, "Method Not Allowed", server.getErrorPage405());
+    // response.setStatusCode(405);
+    // response.setStatusMessage("Method Not Allowed");
+    // response.setBodyFromFile(server.getRoot() + server.getErrorPage405());
 }
 
 
