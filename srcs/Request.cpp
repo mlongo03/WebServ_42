@@ -206,8 +206,9 @@ std::string Request::generateResponse(Server &server) const {
         handlePostRequest(server, response, location, filePath);
     } else if (checkMethod(location, server, "DELETE")) {
 		std::cout<<"DELETE REQUEST"<<std::endl;
-        handleDeleteRequest(server, response, location, filePath);
+        handleDeleteRequest(server, response, filePath);
     } else {
+		std::cout << "Unsupported method: " << method << std::endl;
         handleUnsupportedMethod(server, response);
     }
     if (location)
@@ -398,33 +399,30 @@ void Request::handlePostRequest(Server &server, Response &response, Location *lo
     }
 }
 
-void Request::handleDeleteRequest(Server &server, Response &response, Location *location, std::string filePath) const {
-    (void)location; //remove the line after you start to use the variable
+void Request::handleDeleteRequest(Server &server, Response &response, std::string filePath) const {
 
 	if(isDirectory(filePath)) {
-		response.setResponseError(response, server, 405, "Method Not Allowed", server.getErrorPage403());
+		response.setResponseError(response, server, 405, "Method Not Allowed", server.getErrorPage405());
 		return;
 	}
-
 	std::cout << "Delete request for file: " << filePath << std::endl;
-    if (!fileExistsAndAccessible(filePath, F_OK)) {
+	if (!fileExistsAndAccessible(filePath, F_OK)) {
 		response.setResponseError(response, server, 404, "Not Found", server.getErrorPage404());
-    } else if (!fileExistsAndAccessible(filePath, W_OK)) {
+	} else if (!fileExistsAndAccessible(filePath, W_OK)) {
 		response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
-    } else {
-        if (remove(filePath.c_str()) == 0) {
-            response.setBodyFromString("<html><body><h1>200 OK</h1></body></html>");
-        } else {
+	} else {
+		if (remove(filePath.c_str()) == 0) {
+			//this is the expected response for a successful DELETE request
+			response.setResponseCode(204);
+			response.setBodyFromString("");
+		} else {
 			response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
-        }
-    }
+		}
+	}
 }
 
 void Request::handleUnsupportedMethod(Server &server, Response &response) const {
 	response.setResponseError(response, server, 405, "Method Not Allowed", server.getErrorPage405());
-    // response.setStatusCode(405);
-    // response.setStatusMessage("Method Not Allowed");
-    // response.setBodyFromFile(server.getRoot() + server.getErrorPage405());
 }
 
 
