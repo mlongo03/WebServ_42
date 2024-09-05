@@ -42,7 +42,7 @@ class Request {
 		void parseHeaders(const std::string& rawRequest);
 		void handleGetRequest(Server &server, Response &response, Location *location, std::string filePath) const;
 		void handlePostRequest(Server &server, Response &response, Location *location, std::string filePath) const;
-		void handleDeleteRequest(Server &server, Response &response, std::string filePath) const;
+		void handleDeleteRequest(Server &server, Response &response, Location *location, std::string filePath) const;
 		void handleUnsupportedMethod(Server &server, Response &response) const;
 		std::string generateDirectoryListingHTML(const std::string &directoryPath) const;
 		Location* checkLocation(Server &server) const;

@@ -162,9 +162,11 @@ Location* Request::checkLocation(Server &server) const {
 
     for (size_t i = 0; i < locations.size(); i++) {
         // std::cout << "Request path : " << path << ", Location path : " << locations[i].getPath() << std::endl;
-        if (path == locations[i].getPath()) {
+	    if (path.find(locations[i].getPath()) == 0) {
             // std::cout << "Location found: " << locations[i].getPath() << std::endl;
-            return new Location(locations[i]);
+           if (path.size() == locations[i].getPath().size() || path[locations[i].getPath().size()] == '/') {
+                return new Location(locations[i]);
+            }
         }
     }
     return NULL;
@@ -194,19 +196,13 @@ std::string Request::generateResponse(Server &server) const {
     Response response(200, "OK");
     Location* location = checkLocation(server);
     std::string filePath = getFilePath(location, server);
-	std::cout << "File path: " << filePath << std::endl;
-	if (location != NULL) {
-		std::cout << " location path is " << location->getPath() << std::endl;
-	} else {
-		std::cout << " location is null" << std::endl;
-	}
     if (checkMethod(location, server, "GET")) {
         handleGetRequest(server, response, location, filePath);
     } else if (checkMethod(location, server, "POST")) {
         handlePostRequest(server, response, location, filePath);
     } else if (checkMethod(location, server, "DELETE")) {
 		std::cout<<"DELETE REQUEST"<<std::endl;
-        handleDeleteRequest(server, response, filePath);
+        handleDeleteRequest(server, response, location, filePath);
     } else {
 		std::cout << "Unsupported method: " << method << std::endl;
         handleUnsupportedMethod(server, response);
@@ -399,8 +395,13 @@ void Request::handlePostRequest(Server &server, Response &response, Location *lo
     }
 }
 
-void Request::handleDeleteRequest(Server &server, Response &response, std::string filePath) const {
+void Request::handleDeleteRequest(Server &server, Response &response, Location *location, std::string filePath) const {
 
+   if (location != NULL) {
+		std::cout << " location path is " << location->getPath() << std::endl;
+	} else {
+		std::cout << " location is null" << std::endl;
+	}
 	if(isDirectory(filePath)) {
 		response.setResponseError(response, server, 405, "Method Not Allowed", server.getErrorPage405());
 		return;
