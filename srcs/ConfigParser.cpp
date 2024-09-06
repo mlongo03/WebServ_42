@@ -423,7 +423,7 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 			std::string uri;
 			iss >> code;
 			iss >> uri;
-			if (code < 100 || code > 599)
+			if (code < 301 || code > 308)
 				throw std::runtime_error("Invalid HTTP status code");
 			if (uri.empty())
 				throw std::runtime_error("return URI is empty");
