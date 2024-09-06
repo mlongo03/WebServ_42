@@ -19,6 +19,7 @@ std::string trimSemicolons(const std::string& str);
 bool hasValidExtension(const std::string& filename);
 bool isValidFile(const std::string& filename);
 std::string getAbsolutePath(const std::string &path);
+bool isFileEmpty(const std::string& filePath);
 
 
 #endif
