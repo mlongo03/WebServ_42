@@ -26,6 +26,7 @@ public:
     void setBodyFromFile(const std::string &filePath);
     void setHeader(const std::string &key, const std::string &value);
     void setContentLength(size_t length);
+	void setResponseCode(int code);
 
     std::string generateResponse() const;
     void setDefaultErrorBody();

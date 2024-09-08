@@ -3,6 +3,8 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <fstream>
+#include <cctype>
 
 
 /**
@@ -167,4 +169,16 @@ bool isValidFile(const std::string& path) {
     }
 
     return true; // File exists, is regular, and is executable
+}
+
+
+bool isFileEmpty(const std::string& filePath) {
+    std::ifstream file(filePath.c_str());
+    char ch;
+    while (file.get(ch)) {
+        if (!std::isspace(static_cast<unsigned char>(ch))) {
+            return false;
+        }
+    }
+    return true;
 }

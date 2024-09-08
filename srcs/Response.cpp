@@ -70,3 +70,7 @@ void Response::setResponseError(Response& response, Server& server, int statusCo
     response.setStatusMessage(statusMessage);
     response.setBodyFromFile(server.getRoot() + errorPage);
 }
+
+void Response::setResponseCode(int code) {
+	statusCode = code;
+}
