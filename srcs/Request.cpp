@@ -412,6 +412,7 @@ void Request::handleDeleteRequest(Server &server, Response &response, std::strin
 		if (remove(filePath.c_str()) == 0) {
 			//this is the expected response for a successful DELETE request
 			response.setResponseCode(204);
+			response.setStatusMessage("No Content");
 			response.setBodyFromString("");
 		} else {
 			response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
