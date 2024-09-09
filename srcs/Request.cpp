@@ -196,8 +196,15 @@ std::string Request::generateResponse(Server &server) const {
     Location* location = checkLocation(server);
     std::string filePath = getFilePath(location, server);
 
+	std::cout << "Request path: " << path << std::endl;
+	printHeaders(headers);
+
+
 	if (shouldRedirect(location, server)) {
-		handleRedirect(location, server, response);
+		if (checkMethod(location, server, "GET") || checkMethod(location, server, "POST") || checkMethod(location, server, "DELETE"))
+			handleRedirect(location, server, response);
+		else
+			handleUnsupportedMethod(server, response);
 	} else if (checkMethod(location, server, "GET")) {
         handleGetRequest(server, response, location, filePath);
     } else if (checkMethod(location, server, "POST")) {
@@ -474,30 +481,54 @@ void Request::handleRedirect(Location* location, Server& server, Response& respo
 		std::cout << "Method is: " << method << std::endl;
 		std::cout << "Redirecting code: " << statusCode  << std::endl;
 		std::cout << "Redirecting to: " << url << std::endl;
+
 		if (statusCode != 301 && statusCode != 302 && statusCode != 303 && statusCode != 307 && statusCode != 308) {
 			return response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
 		}
 		if (statusCode == 301)
 		{
-			response.setStatusCode(statusCode);
-			response.setStatusMessage("Moved Permanently");
-			response.setHeader("Location", url);
-			// Set additional headers
-			response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // Set Cache-Control header
-			response.setHeader("Pragma", "no-cache"); // Set Pragma header
-			response.setHeader("Expires", "0"); // Set Expires header
+			if (method == "GET" || method == "POST" || method == "DELETE")
+			{
+				response.setStatusCode(statusCode);
+				response.setStatusMessage("Moved Permanently");
+				response.setHeader("Location", url);
+				// Set additional headers
+				response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // Set Cache-Control header
+				response.setHeader("Pragma", "no-cache"); // Set Pragma header
+				response.setHeader("Expires", "0"); // Set Expires header
+			}
 		}
 		else if (statusCode == 302)
 		{
-			response.setStatusCode(statusCode);
-			response.setStatusMessage("Found, (Moved Temporarily)");
-			response.setHeader("Location", url);
+
+			if (method == "GET" || method == "POST" || method == "DELETE")
+			{
+				response.setStatusCode(statusCode);
+				response.setStatusMessage("Found, (Moved Temporarily)");
+				response.setHeader("Location", url);
+				// Set additional headers
+				response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // Set Cache-Control header
+				response.setHeader("Pragma", "no-cache"); // Set Pragma header
+				response.setHeader("Expires", "0"); // Set Expires header
+			}
+
+			// response.setStatusCode(statusCode);
+			// response.setStatusMessage("Found, (Moved Temporarily)");
+			// response.setHeader("Location", url);
 		}
 		else if (statusCode == 303)
 		{
-			response.setStatusCode(statusCode);
-			response.setStatusMessage("See Other");
-			response.setHeader("Location", url);
+				response.setStatusCode(statusCode);
+				response.setStatusMessage("See Other");
+				response.setHeader("Location", url);
+				// Set additional headers
+				response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // Set Cache-Control header
+				response.setHeader("Pragma", "no-cache"); // Set Pragma header
+				response.setHeader("Expires", "0"); // Set Expires header
+
+			// response.setStatusCode(statusCode);
+			// response.setStatusMessage("See Other");
+			// response.setHeader("Location", url);
 		}
 		else if (statusCode == 307)
 		{
