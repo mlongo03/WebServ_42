@@ -20,6 +20,7 @@ private:
 public:
     Response(int statusCode, const std::string& statusMessage);
 
+	std::map<std::string, std::string> getHeaders() const;
     void setStatusCode(int code);
     void setStatusMessage(const std::string &message);
     void setBodyFromString(const std::string &bodyContent);
@@ -31,6 +32,7 @@ public:
     std::string generateResponse() const;
     void setDefaultErrorBody();
 	void setResponseError(Response& response, Server& server, int statusCode, const std::string& statusMessage, const std::string& errorPage);
+	void printHeaders(const std::map<std::string, std::string > &headers ) const;
 };
 
 #endif
