@@ -25,6 +25,9 @@ all: $(NAME)
 valgrind : $(NAME)
 	valgrind --leak-check=full --show-leak-kinds=all ./webserv config/config.conf
 
+valgrind_safe : $(NAME)
+	-valgrind --leak-check=full --show-leak-kinds=all ./webserv config/config.conf || true
+
 obj/%.o: srcs/%.cpp
 	@mkdir -p $(@D)
 	@(c++ $(FLAGS) -c $< -o $@)

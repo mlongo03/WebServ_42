@@ -195,14 +195,10 @@ std::string Request::generateResponse(Server &server) const {
     Response response(200, "OK");
     Location* location = checkLocation(server);
     std::string filePath = getFilePath(location, server);
-
-	std::cout << "Request path: " << path << std::endl;
-	std::cout << "headers of the request are !!!!!!!!!:" << std::endl;
-	printHeaders(headers);
-	std::cout << "!!!!!!!!!!!!!!" << std::endl;
-
-
-
+	// std::cout << "Request path: " << path << std::endl;
+	// std::cout << "headers of the request are !!!!!!!!!:" << std::endl;
+	// printHeaders(headers);
+	// std::cout << "!!!!!!!!!!!!!!" << std::endl;
 	if (shouldRedirect(location, server)) {
 		if (checkMethod(location, server, "GET") || checkMethod(location, server, "POST") || checkMethod(location, server, "DELETE"))
 			handleRedirect(location, server, response);
@@ -280,8 +276,7 @@ std::vector<std::string> getCgiExtension(Location *location, Server &server) {
 
 void Request::handleGetRequest(Server &server, Response &response, Location *location, std::string filePath) const {
 
-    std::cout << "GET REQUEST FOR file path : " << filePath << std::endl;
-
+    // std::cout << "GET REQUEST FOR file path : " << filePath << std::endl;
     if (isDirectory(filePath)) {
         if (!fileExistsAndAccessible(filePath, R_OK)) {
           	response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
@@ -412,7 +407,7 @@ void Request::handlePostRequest(Server &server, Response &response, Location *lo
 }
 
 void Request::handleDeleteRequest(Server &server, Response &response, std::string filePath) const {
-	std::cout << "DELETE REQUEST FOR file: " << filePath << std::endl;
+	// std::cout << "DELETE REQUEST FOR file: " << filePath << std::endl;
 	if(isDirectory(filePath)) {
 		response.setResponseError(response, server, 405, "Method Not Allowed", server.getErrorPage405());
 		return;
@@ -464,105 +459,69 @@ void Request::printHeaders(const std::map<std::string, std::string > &headers ) 
 
 
 bool Request::shouldRedirect(Location* location, Server& server) const {
-	(void)server;
-    // Check if location is not null and has a redirection rule
-	std::cout << "in shouldRedirect" << std::endl;
-    if (location && !location->getReturnMap().empty()) {
-        return true;
-    }
-    return false;
+	(void)server; // future use now is not needed
+	// Check if location is not null and has a redirection rule
+	// std::cout << "in shouldRedirect" << std::endl;
+	if (location && !location->getReturnMap().empty()) {
+		return true;
+	}
+	return false;
 }
 
 void Request::handleRedirect(Location* location, Server& server, Response& response) const {
-		(void)server;
-		std::cout << "Redirecting" << std::endl;
-		std::map <int, std::string> returnedMAP = location->getReturnMap();
-		std::map<int, std::string>::iterator it = returnedMAP.begin();
-		std::string method = getMethod();
-		int statusCode = it->first;
-		std::string url = it->second;
-		std::cout << "Method is: " << method << std::endl;
-		std::cout << "Redirecting code: " << statusCode  << std::endl;
-		std::cout << "Redirecting to: " << url << std::endl;
+	std::map <int, std::string> returnedMAP = location->getReturnMap();
+	std::map<int, std::string>::iterator it = returnedMAP.begin();
+	std::string method = getMethod();
+	int statusCode = it->first;
+	std::string url = it->second;
 
-		if (statusCode != 301 && statusCode != 302 && statusCode != 303 && statusCode != 307 && statusCode != 308) {
-			return response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
-		}
-		if (statusCode == 301)
-		{
-				response.setStatusCode(statusCode);
-				response.setStatusMessage("Moved Permanently");
-				response.setHeader("Location", url);
-				// Set additional headers
-				response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // Set Cache-Control header
-				response.setHeader("Pragma", "no-cache"); // Set Pragma header
-				response.setHeader("Expires", "0"); // Set Expires header
-				std::cout << "Headers of response are####: " << std::endl;
-				printHeaders(response.getHeaders());
-				std::cout << "###" << std::endl;
-		}
-		else if (statusCode == 302)
-		{
-				response.setStatusCode(statusCode);
-				response.setStatusMessage("Found, (Moved Temporarily)");
-				response.setHeader("Location", url);
-				// Set additional headers
-				response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // Set Cache-Control header
-				response.setHeader("Pragma", "no-cache"); // Set Pragma header
-				response.setHeader("Expires", "0"); // Set Expires header
-				std::cout << "Headers of response are####: " << std::endl;
-				printHeaders(response.getHeaders());
-				std::cout << "###" << std::endl;
-		}
-		else if (statusCode == 303)
-		{
-				response.setStatusCode(statusCode);
-				response.setStatusMessage("See Other");
-				response.setHeader("Location", url);
-				// Set additional headers
-				response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // Set Cache-Control header
-				response.setHeader("Pragma", "no-cache"); // Set Pragma header
-				response.setHeader("Expires", "0"); // Set Expires header
-				std::cout << "Headers of response are####: " << std::endl;
-				printHeaders(response.getHeaders());
-				std::cout << "###" << std::endl;
-		}
-		else if (statusCode == 307)
-		{
-				response.setStatusCode(statusCode);
-				response.setStatusMessage("Temporary Redirect");
-				response.setHeader("Location", url);
-				response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // Set Cache-Control header
-				response.setHeader("Pragma", "no-cache"); // Set Pragma header
-				response.setHeader("Expires", "0"); // Set Expires header
-				//preserve the original method
-				response.setHeader("Original-Method", method);
-				std::cout << std::endl;
-				std::cout << "Headers of response are ##########: " << std::endl;
-				printHeaders(response.getHeaders());
-				std::cout << "#######" << std::endl;
-		}
-		else if (statusCode == 308)
-		{
-				std::cout << "method is " << method << std::endl;
-				response.setStatusCode(statusCode);
-				response.setStatusMessage("Permanent Redirect");
-				response.setHeader("Location", url);
-				response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate"); // Set Cache-Control header
-				response.setHeader("Pragma", "no-cache"); // Set Pragma header
-				response.setHeader("Expires", "0"); // Set Expires header
-				//preserve the original method
-				response.setHeader("Original-Method", method);
-				std::cout << std::endl;
-				std::cout << "Headers of response are ##########: " << std::endl;
-				printHeaders(response.getHeaders());
-				std::cout << "#######" << std::endl;
-		}
-		else
-		{
-			std::cout << "Error in redirection" << std::endl;
-			response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
-		}
+	if (statusCode != 301 && statusCode != 302 && statusCode != 303 && statusCode != 307 && statusCode != 308) {
+		return response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+	}
+	if (statusCode == 301)
+	{
+		setRedirectResponse(response, statusCode, "Moved Permanently", url);
+		// printHeaders(response.getHeaders());
 
-		return;
+	}
+	else if (statusCode == 302)
+	{
+		setRedirectResponse(response, statusCode, "Found", url);
+		// printHeaders(response.getHeaders());
+	}
+	else if (statusCode == 303)
+	{
+		setRedirectResponse(response, statusCode, "See Other", url);
+		// printHeaders(response.getHeaders());
+	}
+	else if (statusCode == 307)
+	{
+		setRedirectResponse(response, statusCode, "Temporary Redirect", url);
+		// printHeaders(response.getHeaders());
+	}
+	else if (statusCode == 308)
+	{
+		setRedirectResponse(response, statusCode, "Permanent Redirect", url);
+		// printHeaders(response.getHeaders());
+	}
+	else
+	{
+		response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+	}
+
+	return;
+}
+
+
+void Request::setRedirectResponse(Response& response, int statusCode,const std::string& statusMessage, std::string& url) const {
+	response.setStatusCode(statusCode);
+	response.setStatusMessage(statusMessage);
+	response.setHeader("Location", url);
+	response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+	response.setHeader("Pragma", "no-cache");
+	response.setHeader("Expires", "0");
+	//307 and 308 preserve the original method
+	if (statusCode == 307 || statusCode == 308) {
+		response.setHeader("Original-Method", method);
+	}
 }
