@@ -471,43 +471,27 @@ bool Request::shouldRedirect(Location* location, Server& server) const {
 void Request::handleRedirect(Location* location, Server& server, Response& response) const {
 	std::map <int, std::string> returnedMAP = location->getReturnMap();
 	std::map<int, std::string>::iterator it = returnedMAP.begin();
-	std::string method = getMethod();
 	int statusCode = it->first;
 	std::string url = it->second;
 
-	if (statusCode != 301 && statusCode != 302 && statusCode != 303 && statusCode != 307 && statusCode != 308) {
-		return response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
-	}
-	if (statusCode == 301)
-	{
-		setRedirectResponse(response, statusCode, "Moved Permanently", url);
-		// printHeaders(response.getHeaders());
+	//map for all status messages
+	std::map<int, std::string> status_message;
+	status_message[301] = "Moved Permanently";
+	status_message[302] = "Found";
+	status_message[303] = "See Other";
+	status_message[307] = "Temporary Redirect";
+	status_message[308] = "Permanent Redirect";
 
-	}
-	else if (statusCode == 302)
-	{
-		setRedirectResponse(response, statusCode, "Found", url);
-		// printHeaders(response.getHeaders());
-	}
-	else if (statusCode == 303)
-	{
-		setRedirectResponse(response, statusCode, "See Other", url);
-		// printHeaders(response.getHeaders());
-	}
-	else if (statusCode == 307)
-	{
-		setRedirectResponse(response, statusCode, "Temporary Redirect", url);
-		// printHeaders(response.getHeaders());
-	}
-	else if (statusCode == 308)
-	{
-		setRedirectResponse(response, statusCode, "Permanent Redirect", url);
-		// printHeaders(response.getHeaders());
-	}
-	else
-	{
+	// Find the status message
+	std::map<int, std::string>::iterator it2 = status_message.find(statusCode);
+
+	// Check if the status code is valid
+	if (it2 == status_message.end()) {
 		response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+		return;
 	}
+	// Set the redirect response
+	setRedirectResponse(response, statusCode, it2->second, url);
 
 	return;
 }
