@@ -195,7 +195,16 @@ std::string Request::generateResponse(Server &server) const {
     Response response(200, "OK");
     Location* location = checkLocation(server);
     std::string filePath = getFilePath(location, server);
-    if (checkMethod(location, server, "GET")) {
+	// std::cout << "Request path: " << path << std::endl;
+	// std::cout << "headers of the request are !!!!!!!!!:" << std::endl;
+	// printHeaders(headers);
+	// std::cout << "!!!!!!!!!!!!!!" << std::endl;
+	if (shouldRedirect(location, server)) {
+		if (checkMethod(location, server, "GET") || checkMethod(location, server, "POST") || checkMethod(location, server, "DELETE"))
+			handleRedirect(location, server, response);
+		else
+			handleUnsupportedMethod(server, response);
+	} else if (checkMethod(location, server, "GET")) {
         handleGetRequest(server, response, location, filePath);
     } else if (checkMethod(location, server, "POST")) {
         handlePostRequest(server, response, location, filePath);
@@ -267,8 +276,7 @@ std::vector<std::string> getCgiExtension(Location *location, Server &server) {
 
 void Request::handleGetRequest(Server &server, Response &response, Location *location, std::string filePath) const {
 
-    // std::cout << "complete file path : " << filePath << std::endl;
-
+    // std::cout << "GET REQUEST FOR file path : " << filePath << std::endl;
     if (isDirectory(filePath)) {
         if (!fileExistsAndAccessible(filePath, R_OK)) {
           	response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
@@ -399,7 +407,7 @@ void Request::handlePostRequest(Server &server, Response &response, Location *lo
 }
 
 void Request::handleDeleteRequest(Server &server, Response &response, std::string filePath) const {
-	// std::cout << "Delete request for file: " << filePath << std::endl;
+	// std::cout << "DELETE REQUEST FOR file: " << filePath << std::endl;
 	if(isDirectory(filePath)) {
 		response.setResponseError(response, server, 405, "Method Not Allowed", server.getErrorPage405());
 		return;
@@ -449,3 +457,56 @@ void Request::printHeaders(const std::map<std::string, std::string > &headers ) 
         }
         return "";
     }
+
+
+bool Request::shouldRedirect(Location* location, Server& server) const {
+	(void)server; // future use now is not needed
+	// Check if location is not null and has a redirection rule
+	// std::cout << "in shouldRedirect" << std::endl;
+	if (location && !location->getReturnMap().empty()) {
+		return true;
+	}
+	return false;
+}
+
+void Request::handleRedirect(Location* location, Server& server, Response& response) const {
+	std::map <int, std::string> returnedMAP = location->getReturnMap();
+	std::map<int, std::string>::iterator it = returnedMAP.begin();
+	int statusCode = it->first;
+	std::string url = it->second;
+
+	//map for all status messages
+	std::map<int, std::string> status_message;
+	status_message[301] = "Moved Permanently";
+	status_message[302] = "Found";
+	status_message[303] = "See Other";
+	status_message[307] = "Temporary Redirect";
+	status_message[308] = "Permanent Redirect";
+
+	// Find the status message
+	std::map<int, std::string>::iterator it2 = status_message.find(statusCode);
+
+	// Check if the status code is valid
+	if (it2 == status_message.end()) {
+		response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+		return;
+	}
+	// Set the redirect response
+	setRedirectResponse(response, statusCode, it2->second, url);
+
+	return;
+}
+
+
+void Request::setRedirectResponse(Response& response, int statusCode,const std::string& statusMessage, std::string& url) const {
+	response.setStatusCode(statusCode);
+	response.setStatusMessage(statusMessage);
+	response.setHeader("Location", url);
+	response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+	response.setHeader("Pragma", "no-cache");
+	response.setHeader("Expires", "0");
+	//307 and 308 preserve the original method
+	if (statusCode == 307 || statusCode == 308) {
+		response.setHeader("Original-Method", method);
+	}
+}

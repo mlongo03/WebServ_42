@@ -35,7 +35,7 @@ class Request {
 		std::string getHttpVersion() const;
 		std::map<std::string, std::string> getHeaders() const;
 		std::string getBody() const;
-    void setBody(std::string body);
+		void setBody(std::string body);
 		std::string generateResponse(Server &server) const;
 		std::map<std::string, std::string> getQueryParameters() const;
 
@@ -53,6 +53,9 @@ class Request {
 		void printHeaders(const std::map<std::string, std::string > &headers ) const;
 		std::string getContentType() const;
         time_t getStartTime() const;
+		bool shouldRedirect(Location* location, Server& server) const;
+		void handleRedirect(Location* location, Server& server, Response& response) const;
+		void setRedirectResponse(Response& response, int statusCode,const std::string& statusMessage, std::string& url) const;
 };
 
 #endif
