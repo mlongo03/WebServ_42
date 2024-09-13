@@ -123,6 +123,7 @@ void Worker::run()
         }
         catch(const std::exception& e)
         {
+            std::cout << "InvalidHttpRequestException" << std::endl;
 			std::cerr << e.what() << std::endl;
 			closeSockets();
 			return ;
@@ -297,27 +298,26 @@ void Worker::handleClientData(Client &client) {
 
     std::cout << "test" << std::endl;
 
-    while ((bytesRead = recv(client.getFd(), buffer, sizeof buffer, 0)) > 0) {
-        client.setRequest(client.getRequest().append(buffer, bytesRead));
-        if (isCompleteRequest(client) || bytesRead < BUFFER_LENGHT) {
-            break;
+    try {
+        while ((bytesRead = recv(client.getFd(), buffer, sizeof buffer, 0)) > 0) {
+            client.setRequest(client.getRequest().append(buffer, bytesRead));
+            if (isCompleteRequest(client) || bytesRead < BUFFER_LENGHT) {
+                break;
+            }
         }
-    }
 
-    std::cout << "bytes read : " << bytesRead << std::endl;
-    std::cout << "message got = " << client.getRequest() << std::endl;
-    // std::cout << "Request = " << client.getRequestObject() << std::endl;
+        std::cout << "bytes read : " << bytesRead << std::endl;
+        // std::cout << "message got = " << client.getRequest() << std::endl;
+        // std::cout << "Request = " << client.getRequestObject() << std::endl;
 
-    if (bytesRead == 0) {
-        epollHandler.removeFd(client.getFd());
-        clientSockets.erase(std::find(clientSockets.begin(), clientSockets.end(), client.getFd()));
-        close(client.getFd());
-        std::cout << "Connection closed on socket " << client.getFd() << std::endl;
-    } else if (bytesRead < 0) {
-        return ;
-    } else {
-        try
-        {
+        if (bytesRead == 0) {
+            epollHandler.removeFd(client.getFd());
+            clientSockets.erase(std::find(clientSockets.begin(), clientSockets.end(), client.getFd()));
+            close(client.getFd());
+            std::cout << "Connection closed on socket " << client.getFd() << std::endl;
+        } else if (bytesRead < 0) {
+            return ;
+        } else {
             if (!client.hasServer()) {
                 assignServerToClient(*client.getRequestObject(), client);
             }
@@ -328,13 +328,20 @@ void Worker::handleClientData(Client &client) {
                 client.setRequestObject(NULL);
             }
         }
-        catch (const InvalidHttpRequestException& e)
-        {
-            std::cerr << e.what() << std::endl;
-            Response response(400, "Bad Request");
-            response.setBodyFromFile(servers[0].getRoot() + servers[0].getErrorPage400());
-            client.setResponse(response.generateResponse());
+    } catch (const InvalidHttpRequestException& e) {
+        std::cerr << e.what() << std::endl;
+        Response response(400, "Bad Request");
+        response.setBodyFromFile(servers[0].getRoot() + servers[0].getErrorPage400());
+        client.setResponse(response.generateResponse());
+        client.clearRequest();
+        if (client.getRequestObject() != NULL) {
+            delete client.getRequestObject();
+            client.setRequestObject(NULL);
         }
+        epollHandler.removeFd(client.getFd());
+        clientSockets.erase(std::find(clientSockets.begin(), clientSockets.end(), client.getFd()));
+        close(client.getFd());
+        std::cout << "Connection closed on socket " << client.getFd() << std::endl;
     }
 }
 

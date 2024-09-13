@@ -35,7 +35,7 @@ class Request {
 		std::string getHttpVersion() const;
 		std::map<std::string, std::string> getHeaders() const;
 		std::string getBody() const;
-    void setBody(std::string body);
+		void setBody(std::string body);
 		std::string generateResponse(Server &server) const;
 		std::map<std::string, std::string> getQueryParameters() const;
 
@@ -53,6 +53,8 @@ class Request {
 		void printHeaders(const std::map<std::string, std::string > &headers ) const;
 		std::string getContentType() const;
         time_t getStartTime() const;
+		std::string getFilenameFromPath(const std::string& path) const;
+		std::string generateUniqueFilename() const;
 };
 
 #endif
