@@ -281,7 +281,14 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 		else if (key == "client_max_body_size")
 		{
 			if (isValidNumber(value))
-				currentServer.setClientMaxBodySize(value);
+			{
+				std::stringstream ss(value);
+				size_t values;
+				ss >> values;
+				values = values * 1024;
+				// std::cout << "value of body size is: " << values << std::endl;
+				currentServer.setClientMaxBodySize(values);
+			}
 			else
 				throw std::runtime_error("Invalid body size: " + value);
 		}
