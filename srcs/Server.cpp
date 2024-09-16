@@ -11,11 +11,12 @@ Server::Server() :
 	_error_page_403("/error_page/403.html"),
 	_error_page_404("/error_page/404.html"),
 	_error_page_405("/error_page/405.html"),
+	_error_page_413("/error_page/413.html"),
 	_error_page_500("/error_page/500.html"),
 	_error_page_502("/error_page/502.html"),
 	_error_page_503("/error_page/503.html"),
-	_client_max_body_size("1000"), // default client_max_body_size 1000 kilobytes (1000 * 1024 bytes)
-  _autoindex(false)
+	_client_max_body_size(1000), // default client_max_body_size 1000 kilobytes (1000 * 1024 bytes)
+	_autoindex(false)
 {
 	this->_allow.push_back("GET");
 	this->_allow.push_back("POST");
@@ -45,6 +46,7 @@ Server& Server::operator=(const Server& rhs)
 		_error_page_403 = rhs._error_page_403;
 		_error_page_404 = rhs._error_page_404;
 		_error_page_405 = rhs._error_page_405;
+		_error_page_413 = rhs._error_page_413;
 		_error_page_500 = rhs._error_page_500;
 		_error_page_502 = rhs._error_page_502;
 		_error_page_503 = rhs._error_page_503;
@@ -116,6 +118,10 @@ std::string Server::getErrorPage405() const {
 	return _error_page_405;
 }
 
+std::string Server::getErrorPage413() const {
+	return _error_page_413;
+}
+
 std::string Server::getErrorPage500() const {
 	return _error_page_500;
 }
@@ -128,7 +134,7 @@ std::string Server::getErrorPage503() const {
 	return _error_page_503;
 }
 
-std::string Server::getClientMaxBodySize() const {
+size_t Server::getClientMaxBodySize() const {
 	return _client_max_body_size;
 }
 
@@ -192,6 +198,10 @@ void Server::setErrorPage405(const std::string& _error_page_405) {
 	this->_error_page_405 = _error_page_405;
 }
 
+void Server::setErrorPage413(const std::string& _error_page_413) {
+	this->_error_page_413 = _error_page_413;
+}
+
 void Server::setErrorPage500(const std::string& _error_page_500) {
 	this->_error_page_500 = _error_page_500;
 }
@@ -204,7 +214,7 @@ void Server::setErrorPage503(const std::string& _error_page_503) {
 	this->_error_page_503 = _error_page_503;
 }
 
-void Server::setClientMaxBodySize(const std::string& _client_max_body_size) {
+void Server::setClientMaxBodySize(size_t& _client_max_body_size) {
 	this->_client_max_body_size = _client_max_body_size;
 }
 
@@ -253,6 +263,8 @@ std::ostream& operator<<(std::ostream& os, const Server& server) {
 	os << "  error_page_401: |" << server.getErrorPage401() << "|" << "\n";
 	os << "  error_page_403: |" << server.getErrorPage403() << "|" << "\n";
 	os << "  error_page_404: |" << server.getErrorPage404() << "|" << "\n";
+	os << "  error_page_405: |" << server.getErrorPage405() << "|" << "\n";
+	os << "  error_page_413: |" << server.getErrorPage413() << "|" << "\n";
 	os << "  error_page_500: |" << server.getErrorPage500() << "|" << "\n";
 	os << "  error_page_502: |" << server.getErrorPage502() << "|" << "\n";
 	os << "  error_page_503: |" << server.getErrorPage503() << "|" << "\n";
