@@ -2,7 +2,7 @@
 #include <netdb.h>
 #include <cstring>
 #include <iostream>
-#define BACKLOG 10
+#include <climits>
 
 Socket::Socket() : socketfd(-1) {}
 
@@ -45,7 +45,7 @@ Socket::Socket(const Server& server) {
         throw std::runtime_error(error);
     }
 
-    if (listen(sockfd, BACKLOG) == -1) {
+    if (listen(sockfd, INT_MAX) == -1) {
         close(sockfd);
         freeaddrinfo(res);
         throw std::runtime_error("listen error");

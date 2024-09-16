@@ -36,7 +36,7 @@ void Request::parseRequest(const std::string& rawRequest) {
     path = parts[1];
     httpVersion = parts[2];
 
-    std::cout << "method = " << method << ", path = " << path << ", http version = " << httpVersion << std::endl;
+    // std::cout << "method = " << method << ", path = " << path << ", http version = " << httpVersion << std::endl;
 
     if (method != "GET" && method != "POST" && method != "DELETE") {
         throw InvalidHttpRequestException("Unsupported HTTP method: " + method);
@@ -306,31 +306,34 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
 		response.setResponseError(response, server, 404, "Not Found", server.getErrorPage404());
     } else if (!fileExistsAndAccessible(filePath, R_OK)) {
 		response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
-    } else if (isFileEmpty(filePath)) { // Add this check
-        response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
     } else if (checkCgiMatch(location, server, filePath)) {
-		std::vector<std::string> extensions = getCgiExtension(location, server);
-		if (!fileExistsAndAccessible(filePath, X_OK)) {
-			response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
-		} else {
-			try
-			{
-				Cgi cgiHandler(filePath, extensions, *this);
-				cgiHandler.prepareEnvVars(*this);
-				cgiHandler.execute(response, server, *this);
-			}
-			catch(const std::exception& e) {
-				response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
-			}
-		}
+        if (isFileEmpty(filePath)) {
+            response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+        } else {
+            std::vector<std::string> extensions = getCgiExtension(location, server);
+            if (!fileExistsAndAccessible(filePath, X_OK)) {
+                response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
+            } else {
+                try
+                {
+                    Cgi cgiHandler(filePath, extensions, *this);
+                    cgiHandler.prepareEnvVars(*this);
+                    cgiHandler.execute(response, server, *this);
+                }
+                catch(const std::exception& e) {
+                    response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+                }
+            }
+        }
 	} else {
 		std::string contentType = determineContentType(filePath);
-		std::cout << "Content-Type of a normal get: " << contentType << std::endl;
+		// std::cout << "Content-Type of a normal get: " << contentType << std::endl;
 		response.setHeader("Content-Type", contentType);
 		std::ifstream file(filePath.c_str(), std::ios::binary);
 		std::ostringstream buffer;
 		buffer << file.rdbuf();
 		response.setBodyFromString(buffer.str());
+        file.close();
 	}
 }
 
@@ -404,8 +407,8 @@ void Request::handlePostRequest(Server &server, Response &response, Location *lo
         }
         fullPath += generateUniqueFilename();
     }
-    std::cout << "upload dir : " << uploadDir << std::endl;
-    std::cout << "full path : " << fullPath << std::endl;
+    // std::cout << "upload dir : " << uploadDir << std::endl;
+    // std::cout << "full path : " << fullPath << std::endl;
 
     // Create directories if they don't exist
     size_t pos = 0;
@@ -463,7 +466,6 @@ void Request::handleUnsupportedMethod(Server &server, Response &response) const 
 	response.setResponseError(response, server, 405, "Method Not Allowed", server.getErrorPage405());
 }
 
-
 std::map<std::string, std::string> Request::getQueryParameters() const {
 	return queryParameters;
 }
@@ -480,7 +482,6 @@ void Request::printHeaders(const std::map<std::string, std::string > &headers ) 
 	}
 }
 
-
  std::string Request::getContentType() const {
         std::map<std::string, std::string>::const_iterator it = headers.find("Content-Type");
         if (it != headers.end()) {
@@ -488,7 +489,6 @@ void Request::printHeaders(const std::map<std::string, std::string > &headers ) 
         }
         return "";
     }
-
 
 bool Request::shouldRedirect(Location* location, Server& server) const {
 	(void)server; // future use now is not needed
@@ -527,7 +527,6 @@ void Request::handleRedirect(Location* location, Server& server, Response& respo
 
 	return;
 }
-
 
 void Request::setRedirectResponse(Response& response, int statusCode,const std::string& statusMessage, std::string& url) const {
 	response.setStatusCode(statusCode);
