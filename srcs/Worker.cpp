@@ -64,7 +64,6 @@ void	Worker::closeSockets()
     }
 }
 
-
 void Worker::checkTimeouts() {
     const int timeoutDuration = 30; // Example timeout duration in seconds
 
@@ -73,12 +72,12 @@ void Worker::checkTimeouts() {
     for (std::vector<Client>::iterator clientIt = clientSockets.begin(); clientIt != clientSockets.end(); ) {
         if (clientIt->getRequestObject() != NULL) {
             Request* req = clientIt->getRequestObject();
-            std::cout << "Before : " << req << std::endl;
+            // std::cout << "Before : " << req << std::endl;
             double elapsedTime = std::difftime(currentTime, req->getStartTime());
-            std::cout << "After" << std::endl;
+            // std::cout << "After" << std::endl;
             if (elapsedTime > timeoutDuration) {
                 // Timeout detected
-                std::cout << "Request timed out for client: " << clientIt->getFd() << std::endl;
+                // std::cout << "Request timed out for client: " << clientIt->getFd() << std::endl;
                 epollHandler.removeFd(clientIt->getFd());
                 clientSockets.erase(clientIt);
                 close(clientIt->getFd());
@@ -123,7 +122,7 @@ void Worker::run()
         }
         catch(const std::exception& e)
         {
-            std::cout << "InvalidHttpRequestException" << std::endl;
+            // std::cout << "InvalidHttpRequestException" << std::endl;
 			std::cerr << e.what() << std::endl;
 			closeSockets();
 			return ;
@@ -140,7 +139,7 @@ void Worker::handleNewConnection(Socket &socket) {
     int clientSocket = accept(socket.getSocketFd(), (struct sockaddr*)&clientAddr, &addrSize);
 
     if (clientSocket == -1) {
-        std::cerr << "accept error" << std::endl;
+        std::cout << "accept error" << std::endl;
         return;
     }
 
@@ -158,10 +157,10 @@ void Worker::handleNewConnection(Socket &socket) {
     std::ostringstream oss;
     oss << clientPort;
     oss.str();
-    std::cout << "Creating Client object with fd = " << clientSocket << ", socket = " << clientIP << ", port = " << oss.str() << std::endl;
+    // std::cout << "Creating Client object with fd = " << clientSocket << ", socket = " << clientIP << ", port = " << oss.str() << std::endl;
     Client client = Client(clientSocket, clientIP, oss.str(), socket);
     clientSockets.push_back(client);
-    std::cout << "Accepted new connection on socket " << socket.getSocketFd() << ", created tcp connection with fd " << clientSocket << std::endl;
+    // std::cout << "Accepted new connection on socket " << socket.getSocketFd() << ", created tcp connection with fd " << clientSocket << std::endl;
 }
 
 bool Worker::isCompleteRequest(Client& client) {
@@ -262,7 +261,7 @@ bool containsAny(const std::string& target, const std::vector<std::string>& word
 void Worker::assignServerToClient(const Request& request, Client &client) {
     std::map<std::string, std::string> headers = request.getHeaders();
     std::string host = headers.count("Host") ? headers.at("Host") : "";
-    std::cout << "host : " << host << std::endl;
+    // std::cout << "host : " << host << std::endl;
     Socket clientSocket = client.getSocket();
 
     std::vector<Server> filteredServers;
@@ -296,8 +295,6 @@ void Worker::handleClientData(Client &client) {
     char buffer[BUFFER_LENGHT];
     int bytesRead;
 
-    std::cout << "test" << std::endl;
-
     try {
         while ((bytesRead = recv(client.getFd(), buffer, sizeof buffer, 0)) > 0) {
             client.setRequest(client.getRequest().append(buffer, bytesRead));
@@ -306,17 +303,18 @@ void Worker::handleClientData(Client &client) {
             }
         }
 
-        std::cout << "bytes read : " << bytesRead << std::endl;
+        // std::cout << "bytes read : " << bytesRead << std::endl;
         // std::cout << "message got = " << client.getRequest() << std::endl;
         // std::cout << "Request = " << client.getRequestObject() << std::endl;
 
         if (bytesRead == 0) {
             epollHandler.removeFd(client.getFd());
-            clientSockets.erase(std::find(clientSockets.begin(), clientSockets.end(), client.getFd()));
             close(client.getFd());
             std::cout << "Connection closed on socket " << client.getFd() << std::endl;
-        } else if (bytesRead < 0) {
+            clientSockets.erase(std::find(clientSockets.begin(), clientSockets.end(), client.getFd()));
             return ;
+        } else if (bytesRead < 0) {
+            return;
         } else {
             if (!client.hasServer()) {
                 assignServerToClient(*client.getRequestObject(), client);
