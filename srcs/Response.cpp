@@ -74,3 +74,15 @@ void Response::setResponseError(Response& response, Server& server, int statusCo
 void Response::setResponseCode(int code) {
 	statusCode = code;
 }
+
+void Response::printHeaders(const std::map<std::string, std::string > &headers ) const
+{
+	std::map<std::string, std::string>::const_iterator it;
+	for (it = headers.begin(); it != headers.end(); ++it) {
+		std::cout << it->first << ": " << it->second << std::endl;
+	}
+}
+
+std::map<std::string, std::string> Response::getHeaders() const {
+	return headers;
+}

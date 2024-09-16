@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>TEST FOR REDIRECTION</title>
+</head>
+<body>
+	<h1>TEST REDIRECTION</h1>
+	<h2>BEHAVIOUR WITH BROWSER</h2>
+	<p>This page is for demonstrate the functionality of our webserver to handle redirection</p>
+	<p>You have to go first in /old-page</p>
+	<p>inside this location is present a redirection</p>
+	<p>that goes to /new-page</p>
+	<p>with this syntax return 30x /new-page/ </p>
+	<p>so the browser(client) will redirect to /new-page/</p>
+	<p>you can check on the network tab the correct status code and message</p>
+
+	<br>
+
+	<h2>BEHAVIOUR WITH POSTMAN</h2>
+	<p>Create a file and put some test inside it</p>
+	<p>we modifiy the redirection to /new-page/file.txt</p>
+	<p>we change the method to DELETE with postman</p>
+	<p>if we set the redirection to 301/302/303 </p>
+	<p>then postman will redirect to /new-page/file</p>
+	<p>and return a GET</p>
+	<p>the webserver show the file</p>
+
+	<br>
+	<p>if we set the redirection to 307 or 308</p>
+	<p>postman will redirect to /new-page/file.txt</p>
+	<p>and perform the DELETE on that resource</p>
+	<p>returning a 204 No content</p>
+	<br>
+	<p>so 301 302 303 always change the method to GET </p>
+	<p>307 308 keep the original method</p>
+	<br>
+</body>
+</html>
