@@ -53,6 +53,8 @@ class Request {
 		void printHeaders(const std::map<std::string, std::string > &headers ) const;
 		std::string getContentType() const;
         time_t getStartTime() const;
+		std::string getFilenameFromPath(const std::string& path) const;
+		std::string generateUniqueFilename() const;
 		bool shouldRedirect(Location* location, Server& server) const;
 		void handleRedirect(Location* location, Server& server, Response& response) const;
 		void setRedirectResponse(Response& response, int statusCode,const std::string& statusMessage, std::string& url) const;

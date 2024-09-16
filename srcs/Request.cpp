@@ -334,75 +334,106 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
 	}
 }
 
-void Request::handlePostRequest(Server &server, Response &response, Location *location, std::string filePath) const {
+std::string Request::getFilenameFromPath(const std::string& path) const {
+    size_t lastSlash = path.find_last_of("/\\");
+    if (lastSlash == 0) {
+        return "";
+    }
+    if (lastSlash != std::string::npos) {
+        return path.substr(lastSlash + 1);
+    }
+    return path;
+}
 
-  if (isDirectory(filePath)) {
-        if (!fileExistsAndAccessible(filePath, R_OK)) {
-          	response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
+std::string Request::generateUniqueFilename() const {
+    std::stringstream ss;
+    ss << "upload_" << std::time(NULL) << "_" << rand() % 10000 << ".tmp";
+    return ss.str();
+}
+
+void Request::handlePostRequest(Server &server, Response &response, Location *location, std::string filePath) const {
+    // Check if it's a CGI request
+    if (checkCgiMatch(location, server, filePath)) {
+        std::vector<std::string> extensions = getCgiExtension(location, server);
+
+        if (!fileExistsAndAccessible(filePath, F_OK)) {
+            response.setResponseError(response, server, 404, "Not Found", server.getErrorPage404());
+            return;
+        } else if (!fileExistsAndAccessible(filePath, R_OK) || !fileExistsAndAccessible(filePath, X_OK)) {
+            response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
+            return;
+        } else if (isFileEmpty(filePath)) {
+            response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
             return;
         }
-      //Da implementare
-  }
 
-  if (checkCgiMatch(location, server, filePath)) {
-		std::vector<std::string> extensions = getCgiExtension(location, server);
+        try {
+            Cgi cgiHandler(filePath, extensions, *this);
+            cgiHandler.prepareEnvVars(*this);
+            cgiHandler.execute(response, server, *this);
+        } catch (const std::exception &e) {
+            response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+        }
+        return;
+    }
 
-		if (!fileExistsAndAccessible(filePath, F_OK)) {
-			response.setResponseError(response, server, 404, "Not Found", server.getErrorPage404());
-			return;
-		} else if (!fileExistsAndAccessible(filePath, R_OK)) {
-			response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
-			return;
-		} else if (!fileExistsAndAccessible(filePath, X_OK)) {
-			response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
-			return;
-		} else if (isFileEmpty(filePath)) { // Add this check
-			response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
-			return;
-		}
-		else {
-			try
-			{
-				Cgi cgiHandler(filePath, extensions, *this);
-				cgiHandler.prepareEnvVars(*this);
-				cgiHandler.execute(response, server, *this);
-			}
-			catch (const std::exception &e) {
-				response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
-			}
-		}
-		return;
-	}
-
-    // Determine the target directory for uploaded files
-    // std::string uploadDir = (location && !location->getUploadDir().empty()) ? location->getUploadDir() : server.getUploadDir();
+    // If not CGI, check for upload directory in location
     std::string uploadDir = "";
+    if (location && !location->getUploadDir().empty()) {
+        uploadDir = location->getUploadDir();
+    }
 
-    // Check if the directory exists, create it if not
+    // If upload directory is not specified, return an error
+    if (uploadDir.empty()) {
+        response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
+        return;
+    }
+
+    // Ensure the upload directory exists
     if (!fileExistsAndAccessible(uploadDir, F_OK)) {
         if (mkdir(uploadDir.c_str(), 0755) != 0) {
-			response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+            response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
             return;
         }
     }
 
-    // Determine the file path for the uploaded data
-    std::string filePathOut = uploadDir + "/uploaded_data.txt";
+    std::string fullPath = uploadDir + path;
+    if (getFilenameFromPath(path).empty()) {
+        if (path[path.length() - 1] != '/') {
+            fullPath += "/";
+        }
+        fullPath += generateUniqueFilename();
+    }
+    std::cout << "upload dir : " << uploadDir << std::endl;
+    std::cout << "full path : " << fullPath << std::endl;
 
-    // Check if the file is writable or does not exist (meaning we can create it)
-    if (fileExistsAndAccessible(filePathOut, W_OK) || !fileExistsAndAccessible(filePathOut, F_OK)) {
-        std::ofstream outFile(filePathOut.c_str());
+    // Create directories if they don't exist
+    size_t pos = 0;
+    while ((pos = fullPath.find('/', pos + 1)) != std::string::npos) {
+        std::string dir = fullPath.substr(0, pos);
+        if (!fileExistsAndAccessible(dir, F_OK)) {
+            if (mkdir(dir.c_str(), 0755) != 0) {
+                response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+                return;
+            }
+        }
+    }
+
+    // Write the file
+    std::ofstream outFile(fullPath.c_str(), std::ios::binary);
+    if (outFile) {
+        outFile.write(body.c_str(), body.length());
+        outFile.close();
         if (outFile) {
-            outFile << body; // Write the request body to the file
-            outFile.close();
             response.setStatusCode(201);
             response.setStatusMessage("Created");
-            response.setBodyFromString("<html><body><h1>201 Created</h1></body></html>");
+            response.setBodyFromString("<html><body><h1>201 Created</h1><p>File uploaded successfully.</p></body></html>");
+            response.setHeader("Content-Type", "text/html");
         } else {
-			response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+            response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
         }
     } else {
-		response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
+        response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
     }
 }
 
