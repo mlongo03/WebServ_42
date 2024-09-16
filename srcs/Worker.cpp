@@ -66,7 +66,7 @@ void	Worker::closeSockets()
 
 
 void Worker::checkTimeouts() {
-    const int timeoutDuration = 10; // Example timeout duration in seconds
+    const int timeoutDuration = 30; // Example timeout duration in seconds
 
     time_t currentTime = std::time(NULL); // Get the current time
 
@@ -347,7 +347,7 @@ void Worker::handleClientData(Client &client) {
 
 void Worker::handleWritableData(Client &client) {
 
-    std::string response = client.getResponse();
+    std::string& response = client.getResponse();
 
     if (!response.empty()) {
         int bytesSent = send(client.getFd(), response.c_str(), response.size(), 0);
@@ -355,8 +355,9 @@ void Worker::handleWritableData(Client &client) {
         if (bytesSent == -1) {
             return ;
         } else {
-            // std::cout << "response sent = " << response << std::endl;
+            std::cout << "length before = " << response.length() << std::endl;
             response.erase(0, bytesSent);
+			std::cout << "length after = " << response.length() << std::endl;
 
             if (response.empty()) {
                 client.clearResponse();

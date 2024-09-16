@@ -24,6 +24,7 @@ public:
     Socket getSocket() const;
     std::string getRequest() const;
     std::string getResponse() const;
+	std::string& getResponse();
     void setFd(int fd);
     void setHost(std::string host);
     void setPort(std::string port);

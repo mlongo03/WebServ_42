@@ -60,6 +60,10 @@ std::string Client::getResponse() const {
     return response;
 }
 
+std::string& Client::getResponse() {
+    return response;
+}
+
 void Client::setFd(int fd) {
     this->fd = fd;
 }
