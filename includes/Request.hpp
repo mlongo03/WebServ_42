@@ -39,6 +39,7 @@ class Request {
 		std::string generateResponse(Server &server) const;
 		std::map<std::string, std::string> getQueryParameters() const;
 
+		std::string getFileExtensionFromContentType() const;
 		void parseRequest(const std::string& rawRequest);
 		void parseHeaders(const std::string& rawRequest);
 		void handleGetRequest(Server &server, Response &response, Location *location, std::string filePath) const;

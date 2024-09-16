@@ -348,9 +348,31 @@ std::string Request::getFilenameFromPath(const std::string& path) const {
     return path;
 }
 
+std::string Request::getFileExtensionFromContentType() const {
+    std::map<std::string, std::string> contentTypeMap;
+    contentTypeMap.insert(std::make_pair("text/html", ".html"));
+    contentTypeMap.insert(std::make_pair("application/json", ".json"));
+    contentTypeMap.insert(std::make_pair("text/plain", ".txt"));
+    contentTypeMap.insert(std::make_pair("image/jpeg", ".jpg"));
+    contentTypeMap.insert(std::make_pair("image/png", ".png"));
+    contentTypeMap.insert(std::make_pair("application/pdf", ".pdf"));
+    contentTypeMap.insert(std::make_pair("application/xml", ".xml"));
+    contentTypeMap.insert(std::make_pair("application/octet-stream", ".bin"));
+
+    std::map<std::string, std::string>::const_iterator it = contentTypeMap.find(getContentType());
+
+    if (it != contentTypeMap.end()) {
+        return it->second;
+    } else {
+        return ".tmp";
+    }
+}
+
 std::string Request::generateUniqueFilename() const {
     std::stringstream ss;
-    ss << "upload_" << std::time(NULL) << "_" << rand() % 10000 << ".tmp";
+    std::string fileExtension = getFileExtensionFromContentType();
+
+    ss << "upload_" << std::time(NULL) << "_" << rand() % 10000 << fileExtension;
     return ss.str();
 }
 
