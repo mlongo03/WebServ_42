@@ -353,6 +353,10 @@ void ConfigParser::parseLine(const std::string &line, bool inServerBlock, bool i
 				currentServer.setErrorPage404(valueFromError);
 			else if (keyFromError == "405")
 				currentServer.setErrorPage405(valueFromError);
+			else if (keyFromError == "413")
+				currentServer.setErrorPage413(valueFromError);
+			else if (keyFromError == "414")
+				currentServer.setErrorPage414(valueFromError);
 			else if (keyFromError == "500")
 				currentServer.setErrorPage500(valueFromError);
 			else if (keyFromError == "502")

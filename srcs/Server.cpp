@@ -12,6 +12,7 @@ Server::Server() :
 	_error_page_404("/error_page/404.html"),
 	_error_page_405("/error_page/405.html"),
 	_error_page_413("/error_page/413.html"),
+	_error_page_414("/error_page/414.html"),
 	_error_page_500("/error_page/500.html"),
 	_error_page_502("/error_page/502.html"),
 	_error_page_503("/error_page/503.html"),
@@ -47,6 +48,7 @@ Server& Server::operator=(const Server& rhs)
 		_error_page_404 = rhs._error_page_404;
 		_error_page_405 = rhs._error_page_405;
 		_error_page_413 = rhs._error_page_413;
+		_error_page_414 = rhs._error_page_414;
 		_error_page_500 = rhs._error_page_500;
 		_error_page_502 = rhs._error_page_502;
 		_error_page_503 = rhs._error_page_503;
@@ -120,6 +122,10 @@ std::string Server::getErrorPage405() const {
 
 std::string Server::getErrorPage413() const {
 	return _error_page_413;
+}
+
+std::string Server::getErrorPage414() const {
+	return _error_page_414;
 }
 
 std::string Server::getErrorPage500() const {
@@ -202,6 +208,10 @@ void Server::setErrorPage413(const std::string& _error_page_413) {
 	this->_error_page_413 = _error_page_413;
 }
 
+void Server::setErrorPage414(const std::string& _error_page_414) {
+	this->_error_page_414 = _error_page_414;
+}
+
 void Server::setErrorPage500(const std::string& _error_page_500) {
 	this->_error_page_500 = _error_page_500;
 }
@@ -265,6 +275,7 @@ std::ostream& operator<<(std::ostream& os, const Server& server) {
 	os << "  error_page_404: |" << server.getErrorPage404() << "|" << "\n";
 	os << "  error_page_405: |" << server.getErrorPage405() << "|" << "\n";
 	os << "  error_page_413: |" << server.getErrorPage413() << "|" << "\n";
+	os << "  error_page_414: |" << server.getErrorPage414() << "|" << "\n";
 	os << "  error_page_500: |" << server.getErrorPage500() << "|" << "\n";
 	os << "  error_page_502: |" << server.getErrorPage502() << "|" << "\n";
 	os << "  error_page_503: |" << server.getErrorPage503() << "|" << "\n";
