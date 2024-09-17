@@ -39,8 +39,7 @@ void Request::parseRequest(const std::string &rawRequest)
 		throw InvalidHttpRequestException("Request line must have a method, URI, and HTTP version");
 	}
 
-
-  // std::cout << "method = " << method << ", path = " << path << ", http version = " << httpVersion << std::endl;
+	// std::cout << "method = " << method << ", path = " << path << ", http version = " << httpVersion << std::endl;
 	method = parts[0];
 	path = parts[1];
 	httpVersion = parts[2];
@@ -155,7 +154,7 @@ std::string Request::getBody() const
 	return body;
 }
 
-std::string& Request::getBody()
+std::string &Request::getBody()
 {
 	return body;
 }
@@ -260,6 +259,14 @@ std::string Request::generateResponse(Server &server) const
 	Response response(200, "OK");
 	Location *location = checkLocation(server);
 	std::string filePath = getFilePath(location, server);
+
+	if (filePath.size() > MAX_URI_LENGTH)
+	{
+		response.setResponseError(response, server, 414, "URI Too Long", server.getErrorPage414());
+		if (location)
+			delete (location);
+		return response.generateResponse();
+	}
 
 	if (shouldRedirect(location, server))
 	{
@@ -403,26 +410,37 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
 	else if (!fileExistsAndAccessible(filePath, R_OK))
 	{
 		response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
-    } else if (checkCgiMatch(location, server, filePath)) {
-        if (isFileEmpty(filePath)) {
-            response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
-        } else {
-            std::vector<std::string> extensions = getCgiExtension(location, server);
-            if (!fileExistsAndAccessible(filePath, X_OK)) {
-                response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
-            } else {
-                try
-                {
-                    Cgi cgiHandler(filePath, extensions, *this);
-                    cgiHandler.prepareEnvVars(*this);
-                    cgiHandler.execute(response, server, *this);
-                }
-                catch(const std::exception& e) {
-                    response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
-                }
-            }
-        }
-	} else {
+	}
+	else if (checkCgiMatch(location, server, filePath))
+	{
+		if (isFileEmpty(filePath))
+		{
+			response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+		}
+		else
+		{
+			std::vector<std::string> extensions = getCgiExtension(location, server);
+			if (!fileExistsAndAccessible(filePath, X_OK))
+			{
+				response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
+			}
+			else
+			{
+				try
+				{
+					Cgi cgiHandler(filePath, extensions, *this);
+					cgiHandler.prepareEnvVars(*this);
+					cgiHandler.execute(response, server, *this);
+				}
+				catch (const std::exception &e)
+				{
+					response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+				}
+			}
+		}
+	}
+	else
+	{
 		std::string contentType = determineContentType(filePath);
 		// std::cout << "Content-Type of a normal get: " << contentType << std::endl;
 		response.setHeader("Content-Type", contentType);
@@ -430,147 +448,181 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
 		std::ostringstream buffer;
 		buffer << file.rdbuf();
 		response.setBodyFromString(buffer.str());
-        file.close();
+		file.close();
 	}
 }
 
-std::string Request::getFilenameFromPath(const std::string& path) const {
-    size_t lastSlash = path.find_last_of("/\\");
-    if (lastSlash == 0) {
-        return "";
-    }
-    if (lastSlash != std::string::npos) {
-        return path.substr(lastSlash + 1);
-    }
-    return path;
+std::string Request::getFilenameFromPath(const std::string &path) const
+{
+	size_t lastSlash = path.find_last_of("/\\");
+	if (lastSlash == 0)
+	{
+		return "";
+	}
+	if (lastSlash != std::string::npos)
+	{
+		return path.substr(lastSlash + 1);
+	}
+	return path;
 }
 
-std::string Request::getFileExtensionFromContentType() const {
-    std::map<std::string, std::string> contentTypeMap;
-    contentTypeMap.insert(std::make_pair("text/html", ".html"));
-    contentTypeMap.insert(std::make_pair("application/json", ".json"));
-    contentTypeMap.insert(std::make_pair("text/plain", ".txt"));
-    contentTypeMap.insert(std::make_pair("image/jpeg", ".jpg"));
-    contentTypeMap.insert(std::make_pair("image/png", ".png"));
-    contentTypeMap.insert(std::make_pair("application/pdf", ".pdf"));
-    contentTypeMap.insert(std::make_pair("application/xml", ".xml"));
-    contentTypeMap.insert(std::make_pair("application/octet-stream", ".bin"));
+std::string Request::getFileExtensionFromContentType() const
+{
+	std::map<std::string, std::string> contentTypeMap;
+	contentTypeMap.insert(std::make_pair("text/html", ".html"));
+	contentTypeMap.insert(std::make_pair("application/json", ".json"));
+	contentTypeMap.insert(std::make_pair("text/plain", ".txt"));
+	contentTypeMap.insert(std::make_pair("image/jpeg", ".jpg"));
+	contentTypeMap.insert(std::make_pair("image/png", ".png"));
+	contentTypeMap.insert(std::make_pair("application/pdf", ".pdf"));
+	contentTypeMap.insert(std::make_pair("application/xml", ".xml"));
+	contentTypeMap.insert(std::make_pair("application/octet-stream", ".bin"));
 
-    std::map<std::string, std::string>::const_iterator it = contentTypeMap.find(getContentType());
+	std::map<std::string, std::string>::const_iterator it = contentTypeMap.find(getContentType());
 
-    if (it != contentTypeMap.end()) {
-        return it->second;
-    } else {
-        return ".tmp";
-    }
+	if (it != contentTypeMap.end())
+	{
+		return it->second;
+	}
+	else
+	{
+		return ".tmp";
+	}
 }
 
-std::string Request::generateUniqueFilename() const {
-    std::stringstream ss;
-    std::string fileExtension = getFileExtensionFromContentType();
+std::string Request::generateUniqueFilename() const
+{
+	std::stringstream ss;
+	std::string fileExtension = getFileExtensionFromContentType();
 
-    ss << "upload_" << std::time(NULL) << "_" << rand() % 10000 << fileExtension;
-    return ss.str();
+	ss << "upload_" << std::time(NULL) << "_" << rand() % 10000 << fileExtension;
+	return ss.str();
 }
 
-void Request::handlePostRequest(Server &server, Response &response, Location *location, std::string filePath) const {
-    // Check if it's a CGI request
-    if (checkCgiMatch(location, server, filePath)) {
-        std::vector<std::string> extensions = getCgiExtension(location, server);
+void Request::handlePostRequest(Server &server, Response &response, Location *location, std::string filePath) const
+{
+	// Check if it's a CGI request
+	if (checkCgiMatch(location, server, filePath))
+	{
+		std::vector<std::string> extensions = getCgiExtension(location, server);
 
-        if (!fileExistsAndAccessible(filePath, F_OK)) {
-            response.setResponseError(response, server, 404, "Not Found", server.getErrorPage404());
-            return;
-        } else if (!fileExistsAndAccessible(filePath, R_OK) || !fileExistsAndAccessible(filePath, X_OK)) {
-            response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
-            return;
-        } else if (isFileEmpty(filePath)) {
-            response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
-            return;
-        }
+		if (!fileExistsAndAccessible(filePath, F_OK))
+		{
+			response.setResponseError(response, server, 404, "Not Found", server.getErrorPage404());
+			return;
+		}
+		else if (!fileExistsAndAccessible(filePath, R_OK) || !fileExistsAndAccessible(filePath, X_OK))
+		{
+			response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
+			return;
+		}
+		else if (isFileEmpty(filePath))
+		{
+			response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+			return;
+		}
 
-        try {
-            Cgi cgiHandler(filePath, extensions, *this);
-            cgiHandler.prepareEnvVars(*this);
-            cgiHandler.execute(response, server, *this);
-        } catch (const std::exception &e) {
-            response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
-        }
-        return;
-    }
+		try
+		{
+			Cgi cgiHandler(filePath, extensions, *this);
+			cgiHandler.prepareEnvVars(*this);
+			cgiHandler.execute(response, server, *this);
+		}
+		catch (const std::exception &e)
+		{
+			response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+		}
+		return;
+	}
 
-    // checkif  the body of the post request exceeds the max body size
-    std::string requestBody = getBody();
-    size_t requestBodySize = requestBody.size();
-    // std::cout << "Request body size: " << requestBodySize << std::endl;
-    if (requestBodySize > server.getClientMaxBodySize())
-    {
-      // std::cerr << "Request Entity Too Large" << std::endl;
-      response.setResponseError(response, server, 413, "Payload Too large", server.getErrorPage413());
-      return;
-    }
+	// checkif  the body of the post request exceeds the max body size
+	std::string requestBody = getBody();
+	size_t requestBodySize = requestBody.size();
+	// std::cout << "Request body size: " << requestBodySize << std::endl;
+	if (requestBodySize > server.getClientMaxBodySize())
+	{
+		// std::cerr << "Request Entity Too Large" << std::endl;
+		response.setResponseError(response, server, 413, "Payload Too large", server.getErrorPage413());
+		return;
+	}
 
-    // If not CGI, check for upload directory in location
-    std::string uploadDir = "";
-    if (location && !location->getUploadDir().empty()) {
-        uploadDir = location->getUploadDir();
-    }
+	// If not CGI, check for upload directory in location
+	std::string uploadDir = "";
+	if (location && !location->getUploadDir().empty())
+	{
+		uploadDir = location->getUploadDir();
+	}
 
-    // If upload directory is not specified, return an error
-    if (uploadDir.empty()) {
-        response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
-        return;
-    }
+	// If upload directory is not specified, return an error
+	if (uploadDir.empty())
+	{
+		response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
+		return;
+	}
 
-    // Ensure the upload directory exists
-    if (!fileExistsAndAccessible(uploadDir, F_OK)) {
-        if (mkdir(uploadDir.c_str(), 0755) != 0) {
-            response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
-            return;
-        }
-    }
+	// Ensure the upload directory exists
+	if (!fileExistsAndAccessible(uploadDir, F_OK))
+	{
+		if (mkdir(uploadDir.c_str(), 0755) != 0)
+		{
+			response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+			return;
+		}
+	}
 
-    std::string fullPath = uploadDir + path;
-    if (getFilenameFromPath(path).empty()) {
-        if (path[path.length() - 1] != '/') {
-            fullPath += "/";
-        }
-        fullPath += generateUniqueFilename();
-    }
-    // std::cout << "upload dir : " << uploadDir << std::endl;
-    // std::cout << "full path : " << fullPath << std::endl;
+	std::string fullPath = uploadDir + path;
+	if (getFilenameFromPath(path).empty())
+	{
+		if (path[path.length() - 1] != '/')
+		{
+			fullPath += "/";
+		}
+		fullPath += generateUniqueFilename();
+	}
+	// std::cout << "upload dir : " << uploadDir << std::endl;
+	// std::cout << "full path : " << fullPath << std::endl;
 
-    // Create directories if they don't exist
-    size_t pos = 0;
-    while ((pos = fullPath.find('/', pos + 1)) != std::string::npos) {
-        std::string dir = fullPath.substr(0, pos);
-        if (!fileExistsAndAccessible(dir, F_OK)) {
-            if (mkdir(dir.c_str(), 0755) != 0) {
-                response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
-                return;
-            }
-        }
-    }
+	// Create directories if they don't exist
+	size_t pos = 0;
+	while ((pos = fullPath.find('/', pos + 1)) != std::string::npos)
+	{
+		std::string dir = fullPath.substr(0, pos);
+		if (!fileExistsAndAccessible(dir, F_OK))
+		{
+			if (mkdir(dir.c_str(), 0755) != 0)
+			{
+				response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
+				return;
+			}
+		}
+	}
 
-    // Write the file
-    std::ofstream outFile(fullPath.c_str(), std::ios::binary);
-    if (outFile) {
-        outFile.write(body.c_str(), body.length());
-        outFile.close();
-        if (outFile) {
-            response.setStatusCode(201);
-            response.setStatusMessage("Created");
-            response.setBodyFromString("<html><body><h1>201 Created</h1><p>File uploaded successfully.</p></body></html>");
-            response.setHeader("Content-Type", "text/html");
-        } else {
-            response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
-        }
-    } else {
-        response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
-    }
+	// Write the file
+	std::ofstream outFile(fullPath.c_str(), std::ios::binary);
+	if (outFile)
+	{
+		outFile.write(body.c_str(), body.length());
+		outFile.close();
+		if (outFile)
+		{
+			response.setStatusCode(201);
+			response.setStatusMessage("Created");
+			response.setBodyFromString("<html><body><h1>201 Created</h1><p>File uploaded successfully.</p></body></html>");
+			response.setHeader("Content-Type", "text/html");
+		}
+		else
+		{
+			response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+		}
+	}
+	else
+	{
+		response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+	}
 }
 
-void Request::handleDeleteRequest(Server &server, Response &response, std::string filePath) const {
+void Request::handleDeleteRequest(Server &server, Response &response, std::string filePath) const
+{
 	// std::cout << "DELETE REQUEST FOR file: " << filePath << std::endl;
 	if (isDirectory(filePath))
 	{
@@ -606,7 +658,8 @@ void Request::handleUnsupportedMethod(Server &server, Response &response) const
 	response.setResponseError(response, server, 405, "Method Not Allowed", server.getErrorPage405());
 }
 
-std::map<std::string, std::string> Request::getQueryParameters() const {
+std::map<std::string, std::string> Request::getQueryParameters() const
+{
 	return queryParameters;
 }
 
@@ -624,23 +677,26 @@ void Request::printHeaders(const std::map<std::string, std::string> &headers) co
 	}
 }
 
-std::string Request::getContentType() const {
-    std::map<std::string, std::string>::const_iterator it = headers.find("Content-Type");
-    if (it != headers.end()) {
-        return trimSpaces(it->second);
-    }
-    return "";
+std::string Request::getContentType() const
+{
+	std::map<std::string, std::string>::const_iterator it = headers.find("Content-Type");
+	if (it != headers.end())
+	{
+		return trimSpaces(it->second);
+	}
+	return "";
 }
 
-bool Request::shouldRedirect(Location* location, Server& server) const {
-    (void)server; // future use now is not needed
-    // Check if location is not null and has a redirection rule
-    // std::cout << "in shouldRedirect" << std::endl;
-    if (location && !location->getReturnMap().empty())
-    {
-      return true;
-    }
-    return false;
+bool Request::shouldRedirect(Location *location, Server &server) const
+{
+	(void)server; // future use now is not needed
+	// Check if location is not null and has a redirection rule
+	// std::cout << "in shouldRedirect" << std::endl;
+	if (location && !location->getReturnMap().empty())
+	{
+		return true;
+	}
+	return false;
 }
 
 void Request::handleRedirect(Location *location, Server &server, Response &response) const
@@ -673,7 +729,8 @@ void Request::handleRedirect(Location *location, Server &server, Response &respo
 	return;
 }
 
-void Request::setRedirectResponse(Response& response, int statusCode,const std::string& statusMessage, std::string& url) const {
+void Request::setRedirectResponse(Response &response, int statusCode, const std::string &statusMessage, std::string &url) const
+{
 	response.setStatusCode(statusCode);
 	response.setStatusMessage(statusMessage);
 	response.setHeader("Location", url);
