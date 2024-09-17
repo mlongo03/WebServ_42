@@ -474,6 +474,17 @@ std::string Request::generateUniqueFilename() const {
 }
 
 void Request::handlePostRequest(Server &server, Response &response, Location *location, std::string filePath) const {
+    // checkif  the body of the post request exceeds the max body size
+    std::string requestBody = getBody();
+    size_t requestBodySize = requestBody.size();
+    // std::cout << "Request body size: " << requestBodySize << std::endl;
+    if (requestBodySize > server.getClientMaxBodySize())
+    {
+      // std::cerr << "Request Entity Too Large" << std::endl;
+      response.setResponseError(response, server, 413, "Payload Too large", server.getErrorPage413());
+      return;
+    }
+
     // Check if it's a CGI request
     if (checkCgiMatch(location, server, filePath)) {
         std::vector<std::string> extensions = getCgiExtension(location, server);
@@ -497,17 +508,6 @@ void Request::handlePostRequest(Server &server, Response &response, Location *lo
             response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
         }
         return;
-    }
-
-    // checkif  the body of the post request exceeds the max body size
-    std::string requestBody = getBody();
-    size_t requestBodySize = requestBody.size();
-    // std::cout << "Request body size: " << requestBodySize << std::endl;
-    if (requestBodySize > server.getClientMaxBodySize())
-    {
-      // std::cerr << "Request Entity Too Large" << std::endl;
-      response.setResponseError(response, server, 413, "Payload Too large", server.getErrorPage413());
-      return;
     }
 
     // If not CGI, check for upload directory in location

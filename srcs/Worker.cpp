@@ -77,7 +77,7 @@ void Worker::checkTimeouts() {
             // std::cout << "After" << std::endl;
             if (elapsedTime > timeoutDuration) {
                 // Timeout detected
-                // std::cout << "Request timed out for client: " << clientIt->getFd() << std::endl;
+                std::cout << "Request timed out for client: " << clientIt->getFd() << std::endl;
                 epollHandler.removeFd(clientIt->getFd());
                 clientSockets.erase(clientIt);
                 close(clientIt->getFd());
@@ -352,7 +352,7 @@ void Worker::handleClientData(Client &client) {
         }
 
         std::cout << "bytes read : " << bytesRead << std::endl;
-        // std::cout << "message got = " << client.getRequest() << std::endl;
+        std::cout << "message got = " << client.getRequest() << std::endl;
         // std::cout << "Request = " << client.getRequestObject() << std::endl;
 
         if (bytesRead == 0) {
