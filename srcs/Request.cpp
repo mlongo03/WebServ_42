@@ -107,6 +107,7 @@ void Request::parseHeaders(const std::string &rawRequest)
 
 		headers[headerName] = headerValue;
 	}
+	std::cout << "headers done \n";
 }
 
 void Request::parseQueryString(const std::string &queryString)
@@ -150,6 +151,11 @@ std::map<std::string, std::string> Request::getHeaders() const
 }
 
 std::string Request::getBody() const
+{
+	return body;
+}
+
+std::string& Request::getBody()
 {
 	return body;
 }
@@ -506,7 +512,7 @@ void Request::handlePostRequest(Server &server, Response &response, Location *lo
       response.setResponseError(response, server, 413, "Payload Too large", server.getErrorPage413());
       return;
     }
-    
+
     // If not CGI, check for upload directory in location
     std::string uploadDir = "";
     if (location && !location->getUploadDir().empty()) {
@@ -543,7 +549,7 @@ void Request::handlePostRequest(Server &server, Response &response, Location *lo
         std::string dir = fullPath.substr(0, pos);
         if (!fileExistsAndAccessible(dir, F_OK)) {
             if (mkdir(dir.c_str(), 0755) != 0) {
-                response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+                response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
                 return;
             }
         }
@@ -602,7 +608,6 @@ void Request::handleUnsupportedMethod(Server &server, Response &response) const
 {
 	response.setResponseError(response, server, 405, "Method Not Allowed", server.getErrorPage405());
 }
-
 
 std::map<std::string, std::string> Request::getQueryParameters() const {
 	return queryParameters;

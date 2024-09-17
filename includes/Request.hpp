@@ -35,6 +35,7 @@ class Request {
 		std::string getHttpVersion() const;
 		std::map<std::string, std::string> getHeaders() const;
 		std::string getBody() const;
+		std::string& getBody();
 		void setBody(std::string body);
 		std::string generateResponse(Server &server) const;
 		std::map<std::string, std::string> getQueryParameters() const;

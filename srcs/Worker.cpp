@@ -163,11 +163,53 @@ void Worker::handleNewConnection(Socket &socket) {
     // std::cout << "Accepted new connection on socket " << socket.getSocketFd() << ", created tcp connection with fd " << clientSocket << std::endl;
 }
 
+void Worker::completeHeaders(std::string fullRequest, Client& client) {
+    // Find the end of the headers section
+    size_t headerEnd = fullRequest.find("\r\n\r\n");
+    if (headerEnd == std::string::npos) {
+        // If we don't find the end of the headers, the request isn't complete
+        std::cout << "request not complete\n";
+        return ;
+    }
+
+    // Parse and fill headers in the Request object
+    std::cout << "request complete now fill headers\n";
+    if (client.getRequestObject()->getHeaders().empty()) {  // Check if headers are not yet filled
+        client.getRequestObject()->parseHeaders(fullRequest);
+    }
+}
+
+std::string stripChunkedEncoding(const std::string& chunkedBody) {
+    std::string result;
+    size_t pos = 0;
+
+    while (true) {
+        // Step 1: Find the position of the next chunk size
+        size_t chunkSizeEnd = chunkedBody.find("\r\n", pos);
+        if (chunkSizeEnd == std::string::npos) break;
+
+        // Step 2: Extract and parse the chunk size (in hex)
+        std::string chunkSizeStr = chunkedBody.substr(pos, chunkSizeEnd - pos);
+        int chunkSize = std::strtol(chunkSizeStr.c_str(), NULL, 16);
+
+        // If chunk size is 0, we're at the last chunk
+        if (chunkSize == 0) break;
+
+        // Step 3: Move the position past the chunk size and the "\r\n"
+        pos = chunkSizeEnd + 2;
+
+        // Step 4: Append the actual chunk data to the result
+        result.append(chunkedBody, pos, chunkSize);
+
+        // Step 5: Move the position past the chunk data and the trailing "\r\n"
+        pos += chunkSize + 2;
+    }
+
+    return result;
+}
+
 bool Worker::isCompleteRequest(Client& client) {
 
-    if (client.getRequestObject() == NULL) {
-        client.setRequestObject(new Request(client.getRequest()));
-    }
     // Find the end of the headers section
     size_t headerEnd = client.getRequest().find("\r\n\r\n");
     if (headerEnd == std::string::npos) {
@@ -177,11 +219,6 @@ bool Worker::isCompleteRequest(Client& client) {
 
     // At this point, we have all the headers
     size_t bodyStart = headerEnd + 4; // Move past the "\r\n\r\n"
-
-    // Parse and fill headers in the Request object
-    if (client.getRequestObject()->getHeaders().empty()) {  // Check if headers are not yet filled
-        client.getRequestObject()->parseHeaders(client.getRequest());
-    }
 
     // Check for a Content-Length header to determine if we need to wait for a body
     std::map<std::string, std::string> headers = client.getRequestObject()->getHeaders();
@@ -209,6 +246,7 @@ bool Worker::isCompleteRequest(Client& client) {
         if (chunkEnd != std::string::npos) {
             // If chunked body is complete, set it in the Request object
             client.getRequestObject()->setBody(client.getRequest().substr(bodyStart, chunkEnd - bodyStart));
+            client.getRequestObject()->setBody(stripChunkedEncoding(client.getRequestObject()->getBody()));
             return true;
         } else {
             return false; // Incomplete request, waiting for more chunked data
@@ -294,16 +332,25 @@ void Worker::assignServerToClient(const Request& request, Client &client) {
 void Worker::handleClientData(Client &client) {
     char buffer[BUFFER_LENGHT];
     int bytesRead;
+    std::string receivedData;
 
     try {
         while ((bytesRead = recv(client.getFd(), buffer, sizeof buffer, 0)) > 0) {
-            client.setRequest(client.getRequest().append(buffer, bytesRead));
+            receivedData = std::string(buffer, bytesRead);
+
+            if (client.getRequestObject() == NULL) {
+                client.setRequestObject(new Request(receivedData));
+                completeHeaders(receivedData, client);
+            } else if (client.getRequestObject()->getHeaders().size() == 0) {
+                completeHeaders(client.getRequest(), client);
+            }
+            client.setRequest(client.getRequest().append(receivedData));
             if (isCompleteRequest(client) || bytesRead < BUFFER_LENGHT) {
                 break;
             }
         }
 
-        // std::cout << "bytes read : " << bytesRead << std::endl;
+        std::cout << "bytes read : " << bytesRead << std::endl;
         // std::cout << "message got = " << client.getRequest() << std::endl;
         // std::cout << "Request = " << client.getRequestObject() << std::endl;
 
@@ -320,6 +367,7 @@ void Worker::handleClientData(Client &client) {
                 assignServerToClient(*client.getRequestObject(), client);
             }
             if (isCompleteRequest(client)) {
+                std::cout << "request is complete" << std::endl;
                 client.setResponse(client.getRequestObject()->generateResponse(*client.getServer()));
                 client.clearRequest();
                 delete client.getRequestObject();
