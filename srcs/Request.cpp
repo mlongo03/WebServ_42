@@ -260,10 +260,7 @@ std::string Request::generateResponse(Server &server) const
 	Response response(200, "OK");
 	Location *location = checkLocation(server);
 	std::string filePath = getFilePath(location, server);
-	// std::cout << "Request path: " << path << std::endl;
-	// std::cout << "headers of the request are !!!!!!!!!:" << std::endl;
-	// printHeaders(headers);
-	// std::cout << "!!!!!!!!!!!!!!" << std::endl;
+
 	if (shouldRedirect(location, server))
 	{
 		if (checkMethod(location, server, "GET") || checkMethod(location, server, "POST") || checkMethod(location, server, "DELETE"))

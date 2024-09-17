@@ -337,6 +337,7 @@ void Worker::handleClientData(Client &client) {
     try {
         while ((bytesRead = recv(client.getFd(), buffer, sizeof buffer, 0)) > 0) {
             receivedData = std::string(buffer, bytesRead);
+            // std::cout << "received input : " << receivedData << std::endl;
 
             if (client.getRequestObject() == NULL) {
                 client.setRequestObject(new Request(receivedData));
@@ -401,9 +402,9 @@ void Worker::handleWritableData(Client &client) {
         if (bytesSent == -1) {
             return ;
         } else {
-            std::cout << "length before = " << response.length() << std::endl;
+            // std::cout << "length before = " << response.length() << std::endl;
             response.erase(0, bytesSent);
-			std::cout << "length after = " << response.length() << std::endl;
+			// std::cout << "length after = " << response.length() << std::endl;
 
             if (response.empty()) {
                 client.clearResponse();
