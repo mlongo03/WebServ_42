@@ -120,7 +120,223 @@ void Cgi::prepareEnvVars( const Request &request)
         return envArray;
     }
 
+// void Cgi::execute(Response &response, Server &server, const Request &request) {
+//     int pipefd[2];
+//     if (pipe(pipefd) == -1) {
+//         throw std::runtime_error("Failed to create pipe");
+//     }
+
+//     pid_t pid = fork();
+//     if (pid < 0) {
+//         throw std::runtime_error("Failed to fork");
+//     } else if (pid == 0) {
+//         // Child process: Execute the CGI script
+//         close(pipefd[0]);  // Close read end in child process
+
+// 		// // Set an alarm for the child process
+//         // alarm(3);  // Set a timeout of 3 seconds
+
+
+//         // If the method is POST, redirect stdin to read from the pipe
+//         if (method == "POST") {
+//             int inputPipe[2];
+//             if (pipe(inputPipe) == -1) {
+//                 perror("Failed to create input pipe");
+//                 exit(EXIT_FAILURE);
+//             }
+
+//             // Write POST data to the input pipe
+//             ssize_t written = write(inputPipe[1], body.c_str(), body.size());
+//             close(inputPipe[1]);  // Close write end after writing
+//             if (written != static_cast<ssize_t>(body.size())) {
+//                 perror("Failed to write all POST data to the CGI script");
+//             }
+// 			//std::cout << "body is " << body.c_str() << std::endl;
+
+//             // Redirect stdin to read from the input pipe
+//             dup2(inputPipe[0], STDIN_FILENO);
+//             close(inputPipe[0]);  // Close read end of input pipe after dup2
+//         }
+
+//         // Redirect stdout to write to the pipe
+//         dup2(pipefd[1], STDOUT_FILENO);
+//         close(pipefd[1]);  // Close write end of pipe after dup2
+
+
+//         // Build arguments and environment for execve
+//         char *args[] = {const_cast<char*>(path_info.c_str()), NULL};
+//         char **envArray = buildEnvArray();
+
+//         execve(path_info.c_str(), args, envArray);
+
+//         // If execve fails
+//         perror("execve failed");
+//         exit(EXIT_FAILURE);  // Exit child process on failure
+//     } else {
+//         // Parent process: Read the output of the CGI script
+//         close(pipefd[1]);  // Close write end in the parent process
+
+//         char buffer[1024];
+//         std::string result;
+//         ssize_t bytesRead;
+
+//         // Read from the pipe, which contains the CGI output
+//         while ((bytesRead = read(pipefd[0], buffer, sizeof(buffer))) > 0) {
+//             result.append(buffer, bytesRead);
+//         }
+// 		// std::cout << "result is " << result << std::endl;
+//         close(pipefd[0]);  // Close read end after reading
+
+//         // Wait for the child process to finish
+//         int status;
+//         waitpid(pid, &status, 0);
+
+// 		// if (WIFSIGNALED(status) && WTERMSIG(status) == SIGALRM) {
+//         //     std::cerr << "CGI script timed out" << std::endl;
+//         //     throw std::runtime_error("CGI script execution timed out");
+//         // }
+
+//         if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+//             response.setStatusCode(400);
+// 			response.setStatusMessage("Bad Request");
+// 			response.setBodyFromFile(server.getRoot() + server.getErrorPage400());
+//         }
+
+// 		if (check_correct_header(result, response, server, request)) {
+// 			response.setStatusCode(200);
+// 			response.setStatusMessage("OK");
+// 			response.setBodyFromString(getBodyFromResponse(result));
+// 		}
+//     }
+// }
+
+// #include <sys/epoll.h>
+// #include <sys/wait.h>
+// #include <unistd.h>
+// #include <stdexcept>
+// #include <cstring>
+// #include <iostream>
+
+// void Cgi::execute(Response &response, Server &server, const Request &request) {
+//     int pipefd[2];
+//     if (pipe(pipefd) == -1) {
+//         throw std::runtime_error("Failed to create pipe");
+//     }
+
+//     pid_t pid = fork();
+//     if (pid < 0) {
+//         throw std::runtime_error("Failed to fork");
+//     } else if (pid == 0) {
+//         // Child process: Execute the CGI script
+//         close(pipefd[0]);  // Close read end in child process
+
+//         // If the method is POST, redirect stdin to read from the pipe
+//         if (method == "POST") {
+//             int inputPipe[2];
+//             if (pipe(inputPipe) == -1) {
+//                 perror("Failed to create input pipe");
+//                 exit(EXIT_FAILURE);
+//             }
+
+//             // Write POST data to the input pipe
+//             ssize_t written = write(inputPipe[1], body.c_str(), body.size());
+//             close(inputPipe[1]);  // Close write end after writing
+//             if (written != static_cast<ssize_t>(body.size())) {
+//                 perror("Failed to write all POST data to the CGI script");
+//             }
+
+//             // Redirect stdin to read from the input pipe
+//             dup2(inputPipe[0], STDIN_FILENO);
+//             close(inputPipe[0]);  // Close read end of input pipe after dup2
+//         }
+
+//         // Redirect stdout to write to the pipe
+//         dup2(pipefd[1], STDOUT_FILENO);
+//         close(pipefd[1]);  // Close write end of pipe after dup2
+
+//         // Build arguments and environment for execve
+//         char *args[] = {const_cast<char*>(path_info.c_str()), NULL};
+//         char **envArray = buildEnvArray();
+
+//         execve(path_info.c_str(), args, envArray);
+
+//         // If execve fails
+//         perror("execve failed");
+//         exit(EXIT_FAILURE);  // Exit child process on failure
+//     } else {
+//         // Parent process: Read the output of the CGI script
+//         close(pipefd[1]);  // Close write end in the parent process
+
+//         // Create an epoll instance
+//         int epoll_fd = epoll_create1(0);
+//         if (epoll_fd == -1) {
+//             throw std::runtime_error("Failed to create epoll instance");
+//         }
+
+//         // Add the pipe read end to the epoll instance
+//         struct epoll_event event;
+//         event.events = EPOLLIN;
+//         event.data.fd = pipefd[0];
+//         if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, pipefd[0], &event) == -1) {
+//             close(epoll_fd);
+//             throw std::runtime_error("Failed to add file descriptor to epoll");
+//         }
+
+//         // Set a timeout for the epoll wait
+//         int timeout = 3000;  // Timeout in milliseconds (3 seconds)
+//         struct epoll_event events[1];
+//         int nfds = epoll_wait(epoll_fd, events, 1, timeout);
+
+//         if (nfds == -1) {
+//             close(epoll_fd);
+//             throw std::runtime_error("epoll_wait failed");
+//         } else if (nfds == 0) {
+//             // Timeout occurred, kill the child process
+//             kill(pid, SIGKILL);
+//             close(epoll_fd);
+//             throw std::runtime_error("CGI script execution timed out");
+//         }
+
+//         // Read from the pipe, which contains the CGI output
+//         char buffer[1024];
+//         std::string result;
+//         ssize_t bytesRead;
+//         while ((bytesRead = read(pipefd[0], buffer, sizeof(buffer))) > 0) {
+//             result.append(buffer, bytesRead);
+//         }
+//         close(pipefd[0]);  // Close read end after reading
+
+//         // Wait for the child process to finish
+//         int status;
+//         waitpid(pid, &status, 0);
+
+//         if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+//             response.setStatusCode(400);
+//             response.setStatusMessage("Bad Request");
+//             response.setBodyFromFile(server.getRoot() + server.getErrorPage400());
+//         }
+
+//         if (check_correct_header(result, response, server, request)) {
+//             response.setStatusCode(200);
+//             response.setStatusMessage("OK");
+//             response.setBodyFromString(getBodyFromResponse(result));
+//         }
+
+//         close(epoll_fd);  // Close the epoll instance
+//     }
+// }
+
+#include <sys/epoll.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <stdexcept>
+#include <cstring>
+#include <iostream>
+#include <ctime>
+
 void Cgi::execute(Response &response, Server &server, const Request &request) {
+    const int timeoutDuration = 3; // Timeout duration in seconds
+
     int pipefd[2];
     if (pipe(pipefd) == -1) {
         throw std::runtime_error("Failed to create pipe");
@@ -132,10 +348,6 @@ void Cgi::execute(Response &response, Server &server, const Request &request) {
     } else if (pid == 0) {
         // Child process: Execute the CGI script
         close(pipefd[0]);  // Close read end in child process
-
-		// // Set an alarm for the child process
-        // alarm(3);  // Set a timeout of 3 seconds
-
 
         // If the method is POST, redirect stdin to read from the pipe
         if (method == "POST") {
@@ -151,7 +363,6 @@ void Cgi::execute(Response &response, Server &server, const Request &request) {
             if (written != static_cast<ssize_t>(body.size())) {
                 perror("Failed to write all POST data to the CGI script");
             }
-			//std::cout << "body is " << body.c_str() << std::endl;
 
             // Redirect stdin to read from the input pipe
             dup2(inputPipe[0], STDIN_FILENO);
@@ -161,7 +372,6 @@ void Cgi::execute(Response &response, Server &server, const Request &request) {
         // Redirect stdout to write to the pipe
         dup2(pipefd[1], STDOUT_FILENO);
         close(pipefd[1]);  // Close write end of pipe after dup2
-
 
         // Build arguments and environment for execve
         char *args[] = {const_cast<char*>(path_info.c_str()), NULL};
@@ -176,41 +386,339 @@ void Cgi::execute(Response &response, Server &server, const Request &request) {
         // Parent process: Read the output of the CGI script
         close(pipefd[1]);  // Close write end in the parent process
 
-        char buffer[1024];
-        std::string result;
-        ssize_t bytesRead;
-
-        // Read from the pipe, which contains the CGI output
-        while ((bytesRead = read(pipefd[0], buffer, sizeof(buffer))) > 0) {
-            result.append(buffer, bytesRead);
+        // Create an epoll instance
+        int epoll_fd = epoll_create1(0);
+        if (epoll_fd == -1) {
+            throw std::runtime_error("Failed to create epoll instance");
         }
-		// std::cout << "result is " << result << std::endl;
+
+        // Add the pipe read end to the epoll instance
+        struct epoll_event event;
+        event.events = EPOLLIN;
+        event.data.fd = pipefd[0];
+        if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, pipefd[0], &event) == -1) {
+            close(epoll_fd);
+            throw std::runtime_error("Failed to add file descriptor to epoll");
+        }
+
+        // Get the start time
+        time_t startTime = std::time(NULL);
+
+        // Set a timeout for the epoll wait
+        struct epoll_event events[1];
+        bool timeoutOccurred = false;
+        std::string result;
+
+        while (true) {
+            int nfds = epoll_wait(epoll_fd, events, 1, 1000);  // 1-second epoll wait
+            if (nfds == -1) {
+                close(epoll_fd);
+                throw std::runtime_error("epoll_wait failed");
+            } else if (nfds == 0) {
+                // Check for timeout
+                time_t currentTime = std::time(NULL);
+                double elapsedTime = std::difftime(currentTime, startTime);
+                if (elapsedTime > timeoutDuration) {
+                    // Timeout occurred, kill the child process
+                    std::cerr << "CGI script timed out" << std::endl;
+                    kill(pid, SIGKILL);
+                    timeoutOccurred = true;
+                    break;
+                }
+                continue;
+            }
+
+            // Read from the pipe, which contains the CGI output
+            char buffer[1024];
+            ssize_t bytesRead = read(pipefd[0], buffer, sizeof(buffer));
+            if (bytesRead > 0) {
+                result.append(buffer, bytesRead);
+            } else if (bytesRead == 0) {
+                // End of file, child process has finished
+                break;
+            } else {
+                // Error reading from pipe
+                close(epoll_fd);
+                throw std::runtime_error("Error reading from pipe");
+            }
+        }
+
         close(pipefd[0]);  // Close read end after reading
 
         // Wait for the child process to finish
         int status;
         waitpid(pid, &status, 0);
 
-		// if (WIFSIGNALED(status) && WTERMSIG(status) == SIGALRM) {
-        //     std::cerr << "CGI script timed out" << std::endl;
-        //     throw std::runtime_error("CGI script execution timed out");
-        // }
-
-        if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+        if (timeoutOccurred || (WIFEXITED(status) && WEXITSTATUS(status) != 0)) {
             response.setStatusCode(400);
-			response.setStatusMessage("Bad Request");
-			response.setBodyFromFile(server.getRoot() + server.getErrorPage400());
+            response.setStatusMessage("Bad Request");
+            response.setBodyFromFile(server.getRoot() + server.getErrorPage400());
+        } else if (check_correct_header(result, response, server, request)) {
+            response.setStatusCode(200);
+            response.setStatusMessage("OK");
+            response.setBodyFromString(getBodyFromResponse(result));
+        } else {
+            response.setStatusCode(500);
+            response.setStatusMessage("Internal Server Error");
+            response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
         }
 
-		if (check_correct_header(result, response, server, request)) {
-			response.setStatusCode(200);
-			response.setStatusMessage("OK");
-			response.setBodyFromString(getBodyFromResponse(result));
-		}
+        close(epoll_fd);  // Close the epoll instance
     }
 }
 
+// #include <sys/epoll.h>
+// #include <sys/wait.h>
+// #include <unistd.h>
+// #include <stdexcept>
+// #include <cstring>
+// #include <iostream>
 
+// void Cgi::execute(Response &response, Server &server, const Request &request) {
+//     int pipefd[2];
+//     if (pipe(pipefd) == -1) {
+//         throw std::runtime_error("Failed to create pipe");
+//     }
+
+//     pid_t pid = fork();
+//     if (pid < 0) {
+//         throw std::runtime_error("Failed to fork");
+//     } else if (pid == 0) {
+//         // Child process: Execute the CGI script
+//         close(pipefd[0]);  // Close read end in child process
+
+//         // If the method is POST, redirect stdin to read from the pipe
+//         if (method == "POST") {
+//             int inputPipe[2];
+//             if (pipe(inputPipe) == -1) {
+//                 perror("Failed to create input pipe");
+//                 exit(EXIT_FAILURE);
+//             }
+
+//             // Write POST data to the input pipe
+//             ssize_t written = write(inputPipe[1], body.c_str(), body.size());
+//             close(inputPipe[1]);  // Close write end after writing
+//             if (written != static_cast<ssize_t>(body.size())) {
+//                 perror("Failed to write all POST data to the CGI script");
+//             }
+
+//             // Redirect stdin to read from the input pipe
+//             dup2(inputPipe[0], STDIN_FILENO);
+//             close(inputPipe[0]);  // Close read end of input pipe after dup2
+//         }
+
+//         // Redirect stdout to write to the pipe
+//         dup2(pipefd[1], STDOUT_FILENO);
+//         close(pipefd[1]);  // Close write end of pipe after dup2
+
+//         // Build arguments and environment for execve
+//         char *args[] = {const_cast<char*>(path_info.c_str()), NULL};
+//         char **envArray = buildEnvArray();
+
+//         execve(path_info.c_str(), args, envArray);
+
+//         // If execve fails
+//         perror("execve failed");
+//         exit(EXIT_FAILURE);  // Exit child process on failure
+//     } else {
+//         // Parent process: Read the output of the CGI script
+//         close(pipefd[1]);  // Close write end in the parent process
+
+//         // Create an epoll instance
+//         int epoll_fd = epoll_create1(0);
+//         if (epoll_fd == -1) {
+//             throw std::runtime_error("Failed to create epoll instance");
+//         }
+
+//         // Add the pipe read end to the epoll instance
+//         struct epoll_event event;
+//         event.events = EPOLLIN;
+//         event.data.fd = pipefd[0];
+//         if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, pipefd[0], &event) == -1) {
+//             close(epoll_fd);
+//             throw std::runtime_error("Failed to add file descriptor to epoll");
+//         }
+
+//         // Set a timeout for the epoll wait
+//         int timeout = 3000;  // Timeout in milliseconds (3 seconds)
+//         struct epoll_event events[1];
+//         int nfds = epoll_wait(epoll_fd, events, 1, timeout);
+// 		std::cout << "nfds value is = " << nfds << std::endl;
+//         if (nfds == -1) {
+//             close(epoll_fd);
+//             throw std::runtime_error("epoll_wait failed");
+//         } else if (nfds == 0) {
+//             // Timeout occurred, kill the child process
+// 			std::cerr << "CGI script timed out" << std::endl;
+//             kill(pid, SIGKILL);
+//             close(epoll_fd);
+//             throw std::runtime_error("CGI script execution timed out");
+//         }
+
+//         // Read from the pipe, which contains the CGI output
+//         char buffer[1024];
+//         std::string result;
+//         ssize_t bytesRead;
+//         while ((bytesRead = read(pipefd[0], buffer, sizeof(buffer))) > 0) {
+//             result.append(buffer, bytesRead);
+//         }
+//         close(pipefd[0]);  // Close read end after reading
+
+//         // Wait for the child process to finish
+//         int status;
+//         waitpid(pid, &status, 0);
+
+//         if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+//             response.setStatusCode(500);
+//             response.setStatusMessage("Internal Server Error");
+//             response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
+//         }
+
+//         if (check_correct_header(result, response, server, request)) {
+//             response.setStatusCode(200);
+//             response.setStatusMessage("OK");
+//             response.setBodyFromString(getBodyFromResponse(result));
+//         }
+
+//         close(epoll_fd);  // Close the epoll instance
+//     }
+// }
+
+// #include <sys/epoll.h>
+// #include <sys/wait.h>
+// #include <unistd.h>
+// #include <stdexcept>
+// #include <cstring>
+// #include <iostream>
+
+// void Cgi::execute(Response &response, Server &server, const Request &request) {
+//     int pipefd[2];
+//     if (pipe(pipefd) == -1) {
+//         throw std::runtime_error("Failed to create pipe");
+//     }
+
+//     pid_t pid = fork();
+//     if (pid < 0) {
+//         throw std::runtime_error("Failed to fork");
+//     } else if (pid == 0) {
+//         // Child process: Execute the CGI script
+//         close(pipefd[0]);  // Close read end in child process
+
+//         // If the method is POST, redirect stdin to read from the pipe
+//         if (method == "POST") {
+//             int inputPipe[2];
+//             if (pipe(inputPipe) == -1) {
+//                 perror("Failed to create input pipe");
+//                 exit(EXIT_FAILURE);
+//             }
+
+//             // Write POST data to the input pipe
+//             ssize_t written = write(inputPipe[1], body.c_str(), body.size());
+//             close(inputPipe[1]);  // Close write end after writing
+//             if (written != static_cast<ssize_t>(body.size())) {
+//                 perror("Failed to write all POST data to the CGI script");
+//             }
+
+//             // Redirect stdin to read from the input pipe
+//             dup2(inputPipe[0], STDIN_FILENO);
+//             close(inputPipe[0]);  // Close read end of input pipe after dup2
+//         }
+
+//         // Redirect stdout to write to the pipe
+//         dup2(pipefd[1], STDOUT_FILENO);
+//         close(pipefd[1]);  // Close write end of pipe after dup2
+
+//         // Build arguments and environment for execve
+//         char *args[] = {const_cast<char*>(path_info.c_str()), NULL};
+//         char **envArray = buildEnvArray();
+
+//         execve(path_info.c_str(), args, envArray);
+
+//         // If execve fails
+//         perror("execve failed");
+//         exit(EXIT_FAILURE);  // Exit child process on failure
+//     } else {
+//         // Parent process: Read the output of the CGI script
+//         close(pipefd[1]);  // Close write end in the parent process
+
+//         // Create an epoll instance
+//         int epoll_fd = epoll_create1(0);
+//         if (epoll_fd == -1) {
+//             throw std::runtime_error("Failed to create epoll instance");
+//         }
+
+//         // Add the pipe read end to the epoll instance
+//         struct epoll_event event;
+//         event.events = EPOLLIN;
+//         event.data.fd = pipefd[0];
+//         if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, pipefd[0], &event) == -1) {
+//             close(epoll_fd);
+//             throw std::runtime_error("Failed to add file descriptor to epoll");
+//         }
+
+//         // Set a timeout for the epoll wait
+//         int timeout = 3000;  // Timeout in milliseconds (3 seconds)
+//         struct epoll_event events[1];
+//         int nfds = epoll_wait(epoll_fd, events, 1, timeout);
+
+//         if (nfds == -1) {
+//             close(epoll_fd);
+//             throw std::runtime_error("epoll_wait failed");
+//         } else if (nfds == 0) {
+//             // Timeout occurred, kill the child process
+//             kill(pid, SIGKILL);
+//             close(epoll_fd);
+//             throw std::runtime_error("CGI script execution timed out");
+//         }
+
+//         // Read from the pipe, which contains the CGI output
+//         char buffer[1024];
+//         std::string result;
+//         ssize_t bytesRead;
+//         while ((bytesRead = read(pipefd[0], buffer, sizeof(buffer))) > 0) {
+//             result.append(buffer, bytesRead);
+//         }
+//         close(pipefd[0]);  // Close read end after reading
+
+//         // Wait for the child process to finish
+//         int status;
+//         pid_t waitResult = waitpid(pid, &status, WNOHANG);
+//         if (waitResult == 0) {
+//             // Child process is still running, wait with a timeout
+//             struct timespec ts;
+//             ts.tv_sec = 3;  // 3 seconds timeout
+//             ts.tv_nsec = 0;
+//             int s = nanosleep(&ts, NULL);
+//             if (s == -1) {
+//                 perror("nanosleep");
+//             }
+//             // Check again if the child process has finished
+//             waitResult = waitpid(pid, &status, WNOHANG);
+//             if (waitResult == 0) {
+//                 // Child process is still running, kill it
+//                 kill(pid, SIGKILL);
+//                 waitpid(pid, &status, 0);  // Wait for the child process to terminate
+//                 response.setStatusCode(500);
+//                 response.setStatusMessage("Internal Server Error");
+//                 response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
+//             }
+//         }
+
+//         if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+//             response.setStatusCode(500);
+//             response.setStatusMessage("Internal Server Error");
+//             response.setBodyFromFile(server.getRoot() + server.getErrorPage500());
+//         }
+
+//         if (check_correct_header(result, response, server, request)) {
+//             response.setStatusCode(200);
+//             response.setStatusMessage("OK");
+//             response.setBodyFromString(getBodyFromResponse(result));
+//         }
+
+//         close(epoll_fd);  // Close the epoll instance
+//     }
+// }
 
 bool Cgi::check_correct_header(std::string &result, Response &response, Server &server,const Request &request) {
     if (result.empty()) {

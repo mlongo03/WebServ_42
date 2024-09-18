@@ -6,7 +6,7 @@ import os
 import cgi
 
 
-UPLOAD_DIR = "/home/ale/Desktop/WebServ_42/var/www/uploads"  # Directory where uploaded files will be saved
+UPLOAD_DIR = "/home/ale/Desktop/WebServ_42/var/www/"  # Directory where uploaded files will be saved
 
 def handle_post():
     # Ensure the upload directory exists
