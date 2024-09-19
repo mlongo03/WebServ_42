@@ -163,7 +163,10 @@ void Cgi::execute(Response &response, Server &server, const Request &request) {
         char *args[] = {const_cast<char*>(path_info.c_str()), NULL};
         char **envArray = buildEnvArray();
 
-        execve(path_info.c_str(), args, envArray);
+        std::string::size_type lastPos = path_info.rfind('/');
+        chdir(path_info.substr(0, lastPos).c_str());
+
+        execve(("./" + path_info.substr(lastPos)).c_str(), args, envArray);
 
         // If execve fails
         perror("execve failed");

@@ -32,10 +32,18 @@ Worker::Worker(const std::vector<Server>& servers) {
         }
 
         if (!alreadyBound) {
-            Socket socket = Socket(servers[i]);
-            listeningSockets.push_back(socket);
-            set_nonblocking(socket.getSocketFd());
-            epollHandler.addFd(socket.getSocketFd(), EPOLLIN | EPOLLOUT);
+            try
+            {
+                Socket socket = Socket(servers[i]);
+                listeningSockets.push_back(socket);
+                set_nonblocking(socket.getSocketFd());
+                epollHandler.addFd(socket.getSocketFd(), EPOLLIN | EPOLLOUT);
+            }
+            catch(const std::exception& e)
+            {
+                std::cerr << e.what() << std::endl;
+            }
+
         }
     }
     if (listeningSockets.size() == 0)
@@ -394,7 +402,11 @@ void Worker::handleWritableData(Client &client) {
     if (!response.empty()) {
         int bytesSent = send(client.getFd(), response.c_str(), response.size(), 0);
 
-        if (bytesSent == -1) {
+        if (bytesSent <= 0) {
+            epollHandler.removeFd(client.getFd());
+            close(client.getFd());
+            std::cout << "Connection closed" << std::endl;
+            clientSockets.erase(std::find(clientSockets.begin(), clientSockets.end(), client.getFd()));
             return ;
         } else {
             response.erase(0, bytesSent);
