@@ -20,6 +20,7 @@ private:
 	std::string _error_page_404;
 	std::string _error_page_405;
 	std::string _error_page_413;
+	std::string _error_page_414;
 	std::string _error_page_500;
 	std::string _error_page_502;
 	std::string _error_page_503;
@@ -50,9 +51,11 @@ public:
 	std::string getErrorPage404() const;
 	std::string getErrorPage405() const;
 	std::string getErrorPage413() const;
+	std::string getErrorPage414() const;
 	std::string getErrorPage500() const;
 	std::string getErrorPage502() const;
 	std::string getErrorPage503() const;
+
 	size_t getClientMaxBodySize() const;
 	std::vector<std::string> getCgiExtension() const;
 	std::vector<Location> getLocations() const;
@@ -71,6 +74,7 @@ public:
 	void setErrorPage404(const std::string &error_page_404);
 	void setErrorPage405(const std::string &error_page_404);
 	void setErrorPage413(const std::string &error_page_413);
+	void setErrorPage414(const std::string &error_page_414);
 	void setErrorPage500(const std::string &error_page_500);
 	void setErrorPage502(const std::string &error_page_502);
 	void setErrorPage503(const std::string &error_page_503);

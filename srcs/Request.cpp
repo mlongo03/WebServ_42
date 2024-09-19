@@ -39,8 +39,7 @@ void Request::parseRequest(const std::string &rawRequest)
 		throw InvalidHttpRequestException("Request line must have a method, URI, and HTTP version");
 	}
 
-
-  // std::cout << "method = " << method << ", path = " << path << ", http version = " << httpVersion << std::endl;
+	// std::cout << "method = " << method << ", path = " << path << ", http version = " << httpVersion << std::endl;
 	method = parts[0];
 	path = parts[1];
 	httpVersion = parts[2];
@@ -155,7 +154,7 @@ std::string Request::getBody() const
 	return body;
 }
 
-std::string& Request::getBody()
+std::string &Request::getBody()
 {
 	return body;
 }
@@ -260,6 +259,14 @@ std::string Request::generateResponse(Server &server) const
 	Response response(200, "OK");
 	Location *location = checkLocation(server);
 	std::string filePath = getFilePath(location, server);
+
+	if (filePath.size() > MAX_URI_LENGTH)
+	{
+		response.setResponseError(response, server, 414, "URI Too Long", server.getErrorPage414());
+		if (location)
+			delete (location);
+		return response.generateResponse();
+	}
 
 	if (shouldRedirect(location, server))
 	{
@@ -403,26 +410,37 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
 	else if (!fileExistsAndAccessible(filePath, R_OK))
 	{
 		response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
-    } else if (checkCgiMatch(location, server, filePath)) {
-        if (isFileEmpty(filePath)) {
-            response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
-        } else {
-            std::vector<std::string> extensions = getCgiExtension(location, server);
-            if (!fileExistsAndAccessible(filePath, X_OK)) {
-                response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
-            } else {
-                try
-                {
-                    Cgi cgiHandler(filePath, extensions, *this);
-                    cgiHandler.prepareEnvVars(*this);
-                    cgiHandler.execute(response, server, *this);
-                }
-                catch(const std::exception& e) {
-                    response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
-                }
-            }
-        }
-	} else {
+	}
+	else if (checkCgiMatch(location, server, filePath))
+	{
+		if (isFileEmpty(filePath))
+		{
+			response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+		}
+		else
+		{
+			std::vector<std::string> extensions = getCgiExtension(location, server);
+			if (!fileExistsAndAccessible(filePath, X_OK))
+			{
+				response.setResponseError(response, server, 403, "Forbidden", server.getErrorPage403());
+			}
+			else
+			{
+				try
+				{
+					Cgi cgiHandler(filePath, extensions, *this);
+					cgiHandler.prepareEnvVars(*this);
+					cgiHandler.execute(response, server, *this);
+				}
+				catch (const std::exception &e)
+				{
+					response.setResponseError(response, server, 500, "Internal Server Error", server.getErrorPage500());
+				}
+			}
+		}
+	}
+	else
+	{
 		std::string contentType = determineContentType(filePath);
 		// std::cout << "Content-Type of a normal get: " << contentType << std::endl;
 		response.setHeader("Content-Type", contentType);
@@ -430,7 +448,7 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
 		std::ostringstream buffer;
 		buffer << file.rdbuf();
 		response.setBodyFromString(buffer.str());
-        file.close();
+    file.close();
 	}
 }
 
@@ -606,7 +624,8 @@ void Request::handleUnsupportedMethod(Server &server, Response &response) const
 	response.setResponseError(response, server, 405, "Method Not Allowed", server.getErrorPage405());
 }
 
-std::map<std::string, std::string> Request::getQueryParameters() const {
+std::map<std::string, std::string> Request::getQueryParameters() const
+{
 	return queryParameters;
 }
 
@@ -624,23 +643,26 @@ void Request::printHeaders(const std::map<std::string, std::string> &headers) co
 	}
 }
 
-std::string Request::getContentType() const {
-    std::map<std::string, std::string>::const_iterator it = headers.find("Content-Type");
-    if (it != headers.end()) {
-        return trimSpaces(it->second);
-    }
-    return "";
+std::string Request::getContentType() const
+{
+	std::map<std::string, std::string>::const_iterator it = headers.find("Content-Type");
+	if (it != headers.end())
+	{
+		return trimSpaces(it->second);
+	}
+	return "";
 }
 
-bool Request::shouldRedirect(Location* location, Server& server) const {
-    (void)server; // future use now is not needed
-    // Check if location is not null and has a redirection rule
-    // std::cout << "in shouldRedirect" << std::endl;
-    if (location && !location->getReturnMap().empty())
-    {
-      return true;
-    }
-    return false;
+bool Request::shouldRedirect(Location *location, Server &server) const
+{
+	(void)server; // future use now is not needed
+	// Check if location is not null and has a redirection rule
+	// std::cout << "in shouldRedirect" << std::endl;
+	if (location && !location->getReturnMap().empty())
+	{
+		return true;
+	}
+	return false;
 }
 
 void Request::handleRedirect(Location *location, Server &server, Response &response) const
@@ -673,7 +695,8 @@ void Request::handleRedirect(Location *location, Server &server, Response &respo
 	return;
 }
 
-void Request::setRedirectResponse(Response& response, int statusCode,const std::string& statusMessage, std::string& url) const {
+void Request::setRedirectResponse(Response &response, int statusCode, const std::string &statusMessage, std::string &url) const
+{
 	response.setStatusCode(statusCode);
 	response.setStatusMessage(statusMessage);
 	response.setHeader("Location", url);
