@@ -4,9 +4,9 @@
 #include "Server.hpp"
 #include "Location.hpp"
 #include <algorithm>
-#include <string>   // for std::string and std::stoi
-#include <cctype>   // for ::isdigit
-#include <cstdlib>  // for std::atoi
+#include <string>
+#include <cctype>
+#include <cstdlib>
 
 class Server;
 class Location;

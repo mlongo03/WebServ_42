@@ -65,19 +65,17 @@ void	Worker::closeSockets()
 }
 
 void Worker::checkTimeouts() {
-    const int timeoutDuration = 30; // Example timeout duration in seconds
+    const int timeoutDuration = 30; // timeout duration in seconds
 
     time_t currentTime = std::time(NULL); // Get the current time
 
     for (std::vector<Client>::iterator clientIt = clientSockets.begin(); clientIt != clientSockets.end(); ) {
         if (clientIt->getRequestObject() != NULL) {
             Request* req = clientIt->getRequestObject();
-            // std::cout << "Before : " << req << std::endl;
             double elapsedTime = std::difftime(currentTime, req->getStartTime());
-            // std::cout << "After" << std::endl;
             if (elapsedTime > timeoutDuration) {
                 // Timeout detected
-                std::cout << "Request timed out for client: " << clientIt->getFd() << std::endl;
+                // std::cout << "Request timed out for client: " << clientIt->getFd() << std::endl;
                 epollHandler.removeFd(clientIt->getFd());
                 clientSockets.erase(clientIt);
                 close(clientIt->getFd());
@@ -113,7 +111,6 @@ void Worker::run()
                     }
                 }
                 if (events[i].events & EPOLLOUT) {
-                    // std::cout << "response sent = " << events[i].data.fd << std::endl;
                     std::vector<Client>::iterator client = std::find(clientSockets.begin(), clientSockets.end(), events[i].data.fd);
                     if (client != clientSockets.end())
                         handleWritableData(*client);
@@ -122,7 +119,6 @@ void Worker::run()
         }
         catch(const std::exception& e)
         {
-            // std::cout << "InvalidHttpRequestException" << std::endl;
 			std::cerr << e.what() << std::endl;
 			closeSockets();
 			return ;
@@ -168,13 +164,13 @@ void Worker::completeHeaders(std::string fullRequest, Client& client) {
     size_t headerEnd = fullRequest.find("\r\n\r\n");
     if (headerEnd == std::string::npos) {
         // If we don't find the end of the headers, the request isn't complete
-        std::cout << "request not complete\n";
+        // std::cout << "request not complete\n";
         return ;
     }
 
     // Parse and fill headers in the Request object
-    std::cout << "request complete now fill headers\n";
-    if (client.getRequestObject()->getHeaders().empty()) {  // Check if headers are not yet filled
+    // std::cout << "request complete now fill headers\n";
+    if (client.getRequestObject()->getHeaders().empty()) {
         client.getRequestObject()->parseHeaders(fullRequest);
     }
 }
@@ -299,13 +295,11 @@ bool containsAny(const std::string& target, const std::vector<std::string>& word
 void Worker::assignServerToClient(const Request& request, Client &client) {
     std::map<std::string, std::string> headers = request.getHeaders();
     std::string host = headers.count("Host") ? headers.at("Host") : "";
-    // std::cout << "host : " << host << std::endl;
     Socket clientSocket = client.getSocket();
 
     std::vector<Server> filteredServers;
     for (size_t i = 0; i < servers.size(); i++) {
         const Server& server = servers[i];
-        // std::cout << hostToIp(server.getHost()) << ":" << server.getListen() << " == " << clientSocket.getIp() << ":" << clientSocket.getPort() << std::endl;
         if (hostToIp(server.getHost()) == clientSocket.getIp() && server.getListen() == clientSocket.getPort()) {
             filteredServers.push_back(server);
         }
@@ -326,7 +320,6 @@ void Worker::assignServerToClient(const Request& request, Client &client) {
     } else {
         client.setServer(&(*std::find(servers.begin(), servers.end(), filteredServers.front())));
     }
-    // std::cout << "assigned server = " << client.getServer()->getHost() << std::endl;
 }
 
 void Worker::handleClientData(Client &client) {
@@ -351,14 +344,15 @@ void Worker::handleClientData(Client &client) {
             }
         }
 
-        std::cout << "bytes read : " << bytesRead << std::endl;
-        std::cout << "message got = " << client.getRequest() << std::endl;
+        // std::cout << "bytes read : " << bytesRead << std::endl;
+        // std::cout << "message got = " << client.getRequest() << std::endl;
         // std::cout << "Request = " << client.getRequestObject() << std::endl;
 
         if (bytesRead == 0) {
             epollHandler.removeFd(client.getFd());
             close(client.getFd());
-            std::cout << "Connection closed on socket " << client.getFd() << std::endl;
+            // std::cout << "Connection closed on socket " << client.getFd() << std::endl;
+            std::cout << "Connection closed" << std::endl;
             clientSockets.erase(std::find(clientSockets.begin(), clientSockets.end(), client.getFd()));
             return ;
         } else if (bytesRead < 0) {
@@ -368,7 +362,7 @@ void Worker::handleClientData(Client &client) {
                 assignServerToClient(*client.getRequestObject(), client);
             }
             if (isCompleteRequest(client)) {
-                std::cout << "request is complete" << std::endl;
+                // std::cout << "request is complete" << std::endl;
                 client.setResponse(client.getRequestObject()->generateResponse(*client.getServer()));
                 client.clearRequest();
                 delete client.getRequestObject();
@@ -388,7 +382,8 @@ void Worker::handleClientData(Client &client) {
         epollHandler.removeFd(client.getFd());
         clientSockets.erase(std::find(clientSockets.begin(), clientSockets.end(), client.getFd()));
         close(client.getFd());
-        std::cout << "Connection closed on socket " << client.getFd() << std::endl;
+        // std::cout << "Connection closed on socket " << client.getFd() << std::endl;
+        std::cout << "Connection closed" << std::endl;
     }
 }
 
@@ -402,9 +397,7 @@ void Worker::handleWritableData(Client &client) {
         if (bytesSent == -1) {
             return ;
         } else {
-            // std::cout << "length before = " << response.length() << std::endl;
             response.erase(0, bytesSent);
-			// std::cout << "length after = " << response.length() << std::endl;
 
             if (response.empty()) {
                 client.clearResponse();

@@ -32,7 +32,6 @@ Cgi::Cgi(const std::string &path , const std::vector<std::string> &extensions, c
 	extract_script_name(path);
 }
 
-//getters
 std::string Cgi::getScriptName() const {
 	return script_name;
 }
@@ -62,7 +61,6 @@ std::map<std::string, std::string> Cgi::getQueryParameters() const {
 	return queryParameters;
 }
 
-// Setters for method, script path, and request body
 void Cgi::setMethod(const std::string &httpMethod) {
 	method = httpMethod;
 }
@@ -106,7 +104,6 @@ void Cgi::prepareEnvVars( const Request &request)
     }
 }
 
-    // Convert map of environment variables to char* array for execve
     char **Cgi::buildEnvArray() {
         char **envArray = new char*[envVars.size() + 1];
         int i = 0;
@@ -130,8 +127,7 @@ void Cgi::execute(Response &response, Server &server, const Request &request) {
     if (pid < 0) {
         throw std::runtime_error("Failed to fork");
     } else if (pid == 0) {
-        // Child process: Execute the CGI script
-        close(pipefd[0]);  // Close read end in child process
+        close(pipefd[0]);
 
 		// // Set an alarm for the child process
         alarm(3);  // Set a timeout of 3 seconds

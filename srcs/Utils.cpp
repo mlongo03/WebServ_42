@@ -150,11 +150,9 @@ bool isExecutable(const std::string& path) {
 bool isValidFile(const std::string& path) {
     struct stat sb;
 
-	std::cout<< "path in isvalidfile is " << path <<std::endl;
     // Check if the file exists and get file information
 
     if (stat(path.c_str(), &sb) != 0) {
-		std::cout<< "file does not exist" <<std::endl;
         return false; // File does not exist
     }
 

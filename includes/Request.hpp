@@ -17,7 +17,7 @@
 #include "Cgi.hpp"
 #include "Utils.hpp"
 
-const size_t MAX_URI_LENGTH = 255; // Maximum length of a URI (including query string)
+const size_t MAX_URI_LENGTH = 255;
 
 class Request
 {
@@ -53,7 +53,7 @@ public:
 	std::string generateDirectoryListingHTML(const std::string &directoryPath) const;
 	Location *checkLocation(Server &server) const;
 	std::string getFilePath(Location *location, Server server) const;
-	void parseQueryString(const std::string &queryString); // New method to parse query strings
+	void parseQueryString(const std::string &queryString);
 	bool checkMethod(Location *location, Server &server, const std::string &methodToCheck) const;
 	void printHeaders(const std::map<std::string, std::string> &headers) const;
 	std::string getContentType() const;

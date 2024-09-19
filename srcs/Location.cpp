@@ -1,7 +1,6 @@
 #include "Location.hpp"
 
 Location::Location() : path("/"),
-					//    index("index.html"), // if no index is specified in the location block
 					   autoindex(2)
 {}
 
@@ -74,7 +73,6 @@ std::map<int, std::string> Location::getReturnMap() const
 	return return_map;
 }
 
-//setters
 void Location::setIndex(const std::string &index)
 {
 	this->index = index;

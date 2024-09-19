@@ -39,7 +39,6 @@ public:
 	bool operator==(const Server &server);
 	bool equalLocations(std::vector<Location> locations);
 
-	// getters
 	std::vector<std::string> getServerNames() const;
 	std::string getHost() const;
 	std::string getListen() const;
@@ -61,8 +60,7 @@ public:
 	std::vector<Location> getLocations() const;
 	bool getAutoindex() const;
 	std::vector<std::string> getAllow() const;
-
-	// setters
+	
 	void setServerNames(const std::vector<std::string> &server_names);
 	void setHost(const std::string &host);
 	void setListen(const std::string &listen);

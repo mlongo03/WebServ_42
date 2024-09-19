@@ -5,7 +5,6 @@ Server::Server() :
 	host("0.0.0.0"),
 	listen("8080"),
 	root("./var/www"),
-	// index("index.html"), // default index if no index is specified in the location block
 	_error_page_400("/error_page/400.html"),
 	_error_page_401("/error_page/401.html"),
 	_error_page_403("/error_page/403.html"),
@@ -156,8 +155,6 @@ bool Server::getAutoindex() const
 std::vector<std::string> Server::getAllow() const {
 	return _allow;
 }
-//setters methods
-
 
 void Server::setServerNames(const std::vector<std::string>& server_names) {
 	this->server_names = server_names;
@@ -241,7 +238,6 @@ void Server::setAllow(const std::vector<std::string>& _allow) {
 	this->_allow = _allow;
 }
 
-//overload the << operator to print the server object
 std::ostream& operator<<(std::ostream& os, const Server& server) {
 	os << "\nServer names: ";
 	std::vector<std::string> serverNames = server.getServerNames();

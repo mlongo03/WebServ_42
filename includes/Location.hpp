@@ -21,13 +21,11 @@
 #include "ConfigParser.hpp"
 #include "Utils.hpp"
 
-//allow GET POST DELETE only
-
 class Location {
 	private:
 		std::string path;
-		std::string index;  //this is present also in Server class
-		std::vector<std::string> allow; // this is a list of HTTP methods it allows only GET POST DELETE
+		std::string index;
+		std::vector<std::string> allow;
 		int autoindex;
 		std::string root;
 		std::vector<std::string> _cgi_extension;
@@ -35,7 +33,6 @@ class Location {
 		std::map <int, std::string> return_map;
 
 	public:
-		//getters
 		std::vector<std::string> getAllow() const;
 		std::string getIndex() const;
 		std::string getPath() const;
@@ -46,9 +43,6 @@ class Location {
 		std::string getUploadDir() const;
 		std::map <int, std::string> getReturnMap() const;
 
-
-
-		//setters
 		void setIndex(const std::string& index);
 		void setPath(const std::string& path);
 		void setAllow(const std::vector<std::string>& allow);
@@ -57,7 +51,6 @@ class Location {
 		void setCgiExtension(const std::vector<std::string>  &cgi_extension);
 		void setUploadDir(const std::string& upload_dir);
 		void setReturnMap(const std::map <int, std::string> &return_map);
-
 
 		Location();
 		~Location();

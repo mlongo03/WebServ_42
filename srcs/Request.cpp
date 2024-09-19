@@ -39,12 +39,11 @@ void Request::parseRequest(const std::string &rawRequest)
 		throw InvalidHttpRequestException("Request line must have a method, URI, and HTTP version");
 	}
 
-	// std::cout << "method = " << method << ", path = " << path << ", http version = " << httpVersion << std::endl;
 	method = parts[0];
 	path = parts[1];
 	httpVersion = parts[2];
 
-	std::cout << "method = " << method << ", path = " << path << ", http version = " << httpVersion << std::endl;
+	// std::cout << "method = " << method << ", path = " << path << ", http version = " << httpVersion << std::endl;
 
 	if (method != "GET" && method != "POST" && method != "DELETE")
 	{
@@ -61,7 +60,6 @@ void Request::parseRequest(const std::string &rawRequest)
 		throw InvalidHttpRequestException("Unsupported HTTP version: " + httpVersion);
 	}
 
-	// Handle query string parsing
 	size_t queryPos = path.find('?');
 	if (queryPos != std::string::npos)
 	{
@@ -106,7 +104,6 @@ void Request::parseHeaders(const std::string &rawRequest)
 
 		headers[headerName] = headerValue;
 	}
-	std::cout << "headers done \n";
 }
 
 void Request::parseQueryString(const std::string &queryString)
@@ -212,10 +209,8 @@ Location *Request::checkLocation(Server &server) const
 
 	for (size_t i = 0; i < locations.size(); i++)
 	{
-		// std::cout << "Request path : " << path << ", Location path : " << locations[i].getPath() << std::endl;
 		if (path.find(locations[i].getPath()) == 0)
 		{
-			// std::cout << "Location found: " << locations[i].getPath() << std::endl;
 			if (path.size() == locations[i].getPath().size() || path[locations[i].getPath().size()] == '/')
 			{
 				return new Location(locations[i]);
@@ -369,7 +364,6 @@ std::vector<std::string> getCgiExtension(Location *location, Server &server)
 void Request::handleGetRequest(Server &server, Response &response, Location *location, std::string filePath) const
 {
 
-	// std::cout << "GET REQUEST FOR file path : " << filePath << std::endl;
 	if (isDirectory(filePath))
 	{
 		if (!fileExistsAndAccessible(filePath, R_OK))
@@ -442,7 +436,6 @@ void Request::handleGetRequest(Server &server, Response &response, Location *loc
 	else
 	{
 		std::string contentType = determineContentType(filePath);
-		// std::cout << "Content-Type of a normal get: " << contentType << std::endl;
 		response.setHeader("Content-Type", contentType);
 		std::ifstream file(filePath.c_str(), std::ios::binary);
 		std::ostringstream buffer;
@@ -495,10 +488,8 @@ void Request::handlePostRequest(Server &server, Response &response, Location *lo
     // checkif  the body of the post request exceeds the max body size
     std::string requestBody = getBody();
     size_t requestBodySize = requestBody.size();
-    // std::cout << "Request body size: " << requestBodySize << std::endl;
     if (requestBodySize > server.getClientMaxBodySize())
     {
-      // std::cerr << "Request Entity Too Large" << std::endl;
       response.setResponseError(response, server, 413, "Payload Too large", server.getErrorPage413());
       return;
     }
@@ -555,8 +546,6 @@ void Request::handlePostRequest(Server &server, Response &response, Location *lo
         }
         fullPath += generateUniqueFilename();
     }
-    // std::cout << "upload dir : " << uploadDir << std::endl;
-    // std::cout << "full path : " << fullPath << std::endl;
 
     // Create directories if they don't exist
     size_t pos = 0;
@@ -589,7 +578,6 @@ void Request::handlePostRequest(Server &server, Response &response, Location *lo
 }
 
 void Request::handleDeleteRequest(Server &server, Response &response, std::string filePath) const {
-	// std::cout << "DELETE REQUEST FOR file: " << filePath << std::endl;
 	if (isDirectory(filePath))
 	{
 		response.setResponseError(response, server, 405, "Method Not Allowed", server.getErrorPage405());
@@ -657,7 +645,6 @@ bool Request::shouldRedirect(Location *location, Server &server) const
 {
 	(void)server; // future use now is not needed
 	// Check if location is not null and has a redirection rule
-	// std::cout << "in shouldRedirect" << std::endl;
 	if (location && !location->getReturnMap().empty())
 	{
 		return true;

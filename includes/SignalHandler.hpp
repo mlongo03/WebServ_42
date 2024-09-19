@@ -12,10 +12,10 @@ public:
     static void signalHandler(int signum);
 
 private:
-    SignalHandler();  // Private constructor
+    SignalHandler();
     ~SignalHandler();
-    SignalHandler(const SignalHandler&);  // Copy constructor
-    SignalHandler& operator=(const SignalHandler&);  // Assignment operator
+    SignalHandler(const SignalHandler&);
+    SignalHandler& operator=(const SignalHandler&);
 
     int *running;
     int efd;

@@ -1,7 +1,7 @@
 #ifndef Worker_HPP
 #define Worker_HPP
 
-#include <ctime> // For time_t and difftime
+#include <ctime>
 #include "Global.hpp"
 #include "Server.hpp"
 #include "Epoll.hpp"
