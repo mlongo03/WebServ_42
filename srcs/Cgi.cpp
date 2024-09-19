@@ -134,7 +134,7 @@ void Cgi::execute(Response &response, Server &server, const Request &request) {
         close(pipefd[0]);  // Close read end in child process
 
 		// // Set an alarm for the child process
-        // alarm(3);  // Set a timeout of 3 seconds
+        alarm(3);  // Set a timeout of 3 seconds
 
 
         // If the method is POST, redirect stdin to read from the pipe
@@ -191,10 +191,10 @@ void Cgi::execute(Response &response, Server &server, const Request &request) {
         int status;
         waitpid(pid, &status, 0);
 
-		// if (WIFSIGNALED(status) && WTERMSIG(status) == SIGALRM) {
-        //     std::cerr << "CGI script timed out" << std::endl;
-        //     throw std::runtime_error("CGI script execution timed out");
-        // }
+		if (WIFSIGNALED(status) && WTERMSIG(status) == SIGALRM) {
+            std::cerr << "CGI script timed out" << std::endl;
+            throw std::runtime_error("CGI script execution timed out");
+        }
 
         if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
             response.setStatusCode(400);
