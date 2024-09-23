@@ -104,18 +104,50 @@ void Cgi::prepareEnvVars( const Request &request)
     }
 }
 
-    char **Cgi::buildEnvArray() {
-        char **envArray = new char*[envVars.size() + 1];
-        int i = 0;
-		for (std::map<std::string, std::string>::const_iterator it = envVars.begin(); it != envVars.end(); ++it) {
-			std::string envEntry = it->first + "=" + it->second;
-			envArray[i] = new char[envEntry.size() + 1];
-			std::strcpy(envArray[i], envEntry.c_str());
-			i++;
-		}
-        envArray[i] = NULL;
-        return envArray;
+char **Cgi::buildEnvArray() {
+    char **envArray = new char*[envVars.size() + 1];
+    int i = 0;
+    for (std::map<std::string, std::string>::const_iterator it = envVars.begin(); it != envVars.end(); ++it) {
+        std::string envEntry = it->first + "=" + it->second;
+        envArray[i] = new char[envEntry.size() + 1];
+        std::strcpy(envArray[i], envEntry.c_str());
+        i++;
     }
+    envArray[i] = NULL;
+    return envArray;
+}
+
+void parseHeaders(Response &response, std::string result) {
+	std::stringstream requestStream(result);
+	std::string line;
+
+	std::getline(requestStream, line);
+
+	// Parse headers
+	while (std::getline(requestStream, line) && !line.empty() && line != "\r")
+	{
+		// Remove the carriage return character if it's there
+		if (!line.empty() && line[line.size() - 1] == '\r')
+		{
+			line.erase(line.size() - 1);
+		}
+
+		size_t colonPos = line.find(':');
+		if (colonPos == std::string::npos)
+		{
+			throw InvalidHttpRequestException("Malformed header line: " + line);
+		}
+
+		std::string headerName = line.substr(0, colonPos);
+		std::string headerValue = line.substr(colonPos + 1);
+
+		// Remove leading and trailing whitespace from the header value
+		headerValue.erase(0, headerValue.find_first_not_of(" \t"));
+		headerValue.erase(headerValue.find_last_not_of(" \t") + 1);
+
+		response.setHeader(headerName, headerValue);
+	}
+}
 
 void Cgi::execute(Response &response, Server &server, const Request &request) {
     int pipefd[2];
@@ -203,6 +235,7 @@ void Cgi::execute(Response &response, Server &server, const Request &request) {
 		if (check_correct_header(result, response, server, request)) {
 			response.setStatusCode(200);
 			response.setStatusMessage("OK");
+            parseHeaders(response, result);
 			response.setBodyFromString(getBodyFromResponse(result));
 		}
     }
