@@ -1,12 +1,6 @@
 #!/usr/bin/env python3
 
-import os
-import sys
+import time
 
-def handle_get():
-    while (True) :
-        print("ciao")
-
-
-if __name__ == "__main__":
-    handle_get()
+while (True) :
+    print("ciao")
