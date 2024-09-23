@@ -27,7 +27,6 @@ private:
     void assignServerToClient(const Request& request, Client &client);
     bool isCompleteRequest(Client& client);
     void completeHeaders(std::string fullRequest, Client& client);
-    void handleChunkedBody(std::string& receivedData, Client& client);
     std::string hostToIp(std::string host);
     void checkTimeouts();
 
