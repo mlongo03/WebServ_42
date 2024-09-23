@@ -21,17 +21,17 @@ Worker::Worker(const std::vector<Server>& servers) {
     this->servers = servers;
 
     for (size_t i = 0; i < servers.size(); i++) {
-    //     bool alreadyBound = false;
-    //     for (size_t j = 0; j < listeningSockets.size(); j++) {
-    //         if (listeningSockets[j].getIp() == hostToIp(servers[i].getHost()) &&
-    //             listeningSockets[j].getPort() == servers[i].getListen()) {
-    //             alreadyBound = true;
-    //             std::cout << servers[i] << std::endl;
-    //             break;
-    //         }
-    //     }
+        bool alreadyBound = false;
+        for (size_t j = 0; j < listeningSockets.size(); j++) {
+            if (listeningSockets[j].getIp() == hostToIp(servers[i].getHost()) &&
+                listeningSockets[j].getPort() == servers[i].getListen()) {
+                alreadyBound = true;
+                std::cout << servers[i] << std::endl;
+                break;
+            }
+        }
 
-    //     if (!alreadyBound) {
+        if (!alreadyBound) {
             try
             {
                 Socket socket = Socket(servers[i]);
@@ -45,7 +45,7 @@ Worker::Worker(const std::vector<Server>& servers) {
             }
 
         }
-    // }
+    }
     if (listeningSockets.size() == 0)
         throw std::runtime_error("No server can be started");
 
