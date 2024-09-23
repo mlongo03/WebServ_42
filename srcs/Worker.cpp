@@ -381,7 +381,7 @@ void Worker::handleClientData(Client &client) {
         std::cerr << e.what() << std::endl;
         Response response(400, "Bad Request");
         response.setBodyFromFile(servers[0].getRoot() + servers[0].getErrorPage400());
-        client.setResponse(response.generateResponse());
+        client.setResponse(response.generateResponse(client.getRequestObject()->getHeaders()["Cookie"]));
         client.clearRequest();
         if (client.getRequestObject() != NULL) {
             delete client.getRequestObject();

@@ -41,8 +41,44 @@ void Response::setHeader(const std::string &key, const std::string &value) {
     headers[key] = value;
 }
 
-std::string Response::generateResponse() const {
+std::string generateRandomSessionID(int length = 16) {
+    std::string sessionId;
+    static const char charset[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+    for (int i = 0; i < length; ++i) {
+        sessionId += charset[rand() % (sizeof(charset) - 1)];
+    }
+    return sessionId;
+}
+
+bool isSessionCookiePresent(std::string cookies) {
+    std::string sessionID = "session_id=";
+    size_t pos = cookies.find(sessionID);
+
+    // If session_id cookie is present, return the original cookies
+    if (pos != std::string::npos) {
+        return true;
+    }
+
+    return false;
+}
+
+void Response::setSessionCookie() {
+    std::string newSessionID = generateRandomSessionID();
+
+    setHeader("Set-Cookie", "session_id=" + newSessionID + "; Path=/; HttpOnly; Secure; Max-Age=3600");
+}
+
+std::string Response::generateResponse(std::string cookies) {
     std::ostringstream responseStream;
+
+    // std::cout << "Cookie: " << cookies << std::endl;
+    if (cookies.empty() || !isSessionCookiePresent(cookies)) {
+        setSessionCookie();
+    }
+
     responseStream << "HTTP/1.1 " << statusCode << " " << statusMessage << "\r\n";
 
     std::map<std::string, std::string>::const_iterator it;

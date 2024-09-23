@@ -40,7 +40,7 @@ public:
 	std::string getBody() const;
 	std::string &getBody();
 	void setBody(std::string body);
-	std::string generateResponse(Server &server) const;
+	std::string generateResponse(Server &server);
 	std::map<std::string, std::string> getQueryParameters() const;
 
 	std::string getFileExtensionFromContentType() const;
