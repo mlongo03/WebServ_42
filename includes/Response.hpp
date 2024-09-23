@@ -28,8 +28,9 @@ public:
     void setHeader(const std::string &key, const std::string &value);
     void setContentLength(size_t length);
 	void setResponseCode(int code);
+    void setSessionCookie();
 
-    std::string generateResponse() const;
+    std::string generateResponse(std::string cookies);
     void setDefaultErrorBody();
 	void setResponseError(Response& response, Server& server, int statusCode, const std::string& statusMessage, const std::string& errorPage);
 	void printHeaders(const std::map<std::string, std::string > &headers ) const;

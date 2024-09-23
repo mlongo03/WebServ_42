@@ -249,7 +249,7 @@ bool Request::checkMethod(Location *location, Server &server, const std::string 
 	return (method == methodToCheck && (location != NULL ? (location->getAllow().size() == 0 ? containsString(server.getAllow(), methodToCheck) : containsString(location->getAllow(), methodToCheck)) : containsString(server.getAllow(), methodToCheck)));
 }
 
-std::string Request::generateResponse(Server &server) const
+std::string Request::generateResponse(Server &server)
 {
 	Response response(200, "OK");
 	Location *location = checkLocation(server);
@@ -260,7 +260,7 @@ std::string Request::generateResponse(Server &server) const
 		response.setResponseError(response, server, 414, "URI Too Long", server.getErrorPage414());
 		if (location)
 			delete (location);
-		return response.generateResponse();
+		return response.generateResponse(headers["Cookie"]);
 	}
 
 	if (shouldRedirect(location, server))
@@ -288,7 +288,7 @@ std::string Request::generateResponse(Server &server) const
 	}
 	if (location)
 		delete (location);
-	return response.generateResponse();
+	return response.generateResponse(headers["Cookie"]);
 }
 
 bool isDirectory(const std::string &path)
