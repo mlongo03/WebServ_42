@@ -87,6 +87,7 @@ void Cgi::prepareEnvVars( const Request &request)
     envVars["METHOD"] = request.getMethod();
     envVars["SCRIPT_NAME"] = script_name;
     envVars["PATH_INFO"] = request.getPath();
+	envVars["HTTP_COOKIE"] = request.getHeaders().find("Cookie") != request.getHeaders().end() ? request.getHeaders().at("Cookie") : "";
 
 	if (method == "GET")
 	{
