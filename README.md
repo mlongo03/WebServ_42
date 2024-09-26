@@ -21,6 +21,7 @@ Welcome to the **WebServer** project! This is a fully functional HTTP web server
 - **Static File Serving**: Serves static files from specified directories.
 - **Error Pages**: Custom error pages for 404, 403, 500 errors, etc.
 - **Chunked Transfer Encoding**: Properly handles chunked data in requests.
+- **Cookies** and session management (see below for more information)
 - **Multithreaded/Multiprocess**: Can handle concurrent connections using epoll (or other async mechanisms).
 - **Logging**: Provides basic logs for connections and errors.
 - **Stress-Tested**: Battle-tested with tools like `siege` for stability and performance.
@@ -72,31 +73,41 @@ The server can be configured using a configuration file in a similar format to N
 
 ```conf
 server {
-    listen 8080;
-    server_name localhost;
+	server_name test.com ciao.com;
 
-    location / {
-        root /var/www/html;
+	listen 3031;
+	root /var/www;
+	host 192.168.122.1;
+	client_max_body_size 1000;
+	cgi_extension .py;
+
+	autoindex    on;
+
+    location /get_test {
         index index.html;
-    }
+        allow GET;
+	}
 
-    location /cgi-bin/ {
-        cgi_pass /usr/bin/python3;
-        root /var/www/cgi-bin;
-    }
-
-    error_page 404 /404.html;
-    error_page 403 /403.html;
+	location /old-page {
+		allow GET DELETE;
+		return 302 /new-page/;
+	}
 }
 ```
 
 Key sections:
 - **listen**: Port the server listens on.
+- **host**: Ip address the server listens on.
 - **server_name**: Hostname for virtual hosting.
 - **root**: Directory to serve static files.
 - **index**: Default file to serve (e.g., `index.html`).
-- **cgi_pass**: Path to the CGI interpreter (e.g., PHP, Python).
+- **cgi_extension**: define file extensions that the cgi can execute (.py, .pl, .sh).
 - **error_page**: Custom error pages for different status codes.
+- **allow**: define Methods accepted (GET, POST, DELETE).
+- **autoindex**: set the autoindex (on, off).
+- **upload_dir**: can be set only in routes (upload of files can be done only in routes) and set the path where the file should be created.
+- **return**: set the redirection page and the associated status code.
+- **client_max_body_size**: set the max body size of a POST request and is expressed in kilobytes (kb).
 
 ## Testing
 
@@ -130,22 +141,38 @@ You can also manually test the server using a browser or `curl`. Make sure:
 ```
 webserver/
 │
-├── src/
+├── src/                    # folder containing c++ source code
 │   ├── main.cpp            # Entry point of the server
-│   ├── server.cpp          # Server logic
-│   ├── request.cpp         # HTTP request handling
-│   ├── response.cpp        # HTTP response generation
-│   ├── cgi.cpp             # CGI handler
-│   ├── config_parser.cpp   # Configuration file parser
-│   └── worker.cpp          # Handles incoming requests
+│   ├── Server.cpp          # Contains information of a server configuration
+│   ├── Request.cpp         # HTTP request handling
+│   ├── Response.cpp        # HTTP response generation
+│   ├── Cgi.cpp             # CGI handler
+│   ├── ConfigParser.cpp    # Configuration file parser
+│   ├── Worker.cpp          # Handles the main loop and so handle I/O operations
+|   ├── Client.cpp          # Contains informations about a client, a tcp connection (e.g., request string, response string)
+|   ├── Epoll.cpp           # Handles the logic behind the epoll() functions
+|   ├── Socket.cpp          # Handle Sockets creation
+|   ├── SignalHandler.cpp   # Handle the SIGINT signal 
+|   ├── Location.cpp        # Contains information of a location in the server configuration
+│   └── Utils.cpp           # Contains other functions utilities
+|
+├── include/                # folder containing headers
+│   ├── Server.hpp          # Header for Server class
+│   ├── Request.hpp         # Header for Request class
+│   ├── Response.hpp        # Header for Response class
+│   ├── Cgi.hpp             # Header for Cgi class
+│   ├── ConfigParser.hpp    # Header for ConfigParser class
+│   ├── Worker.hpp          # Header for Worker class
+|   ├── Client.hpp          # Header for Client class
+|   ├── Epoll.hpp           # Header for Epoll class
+|   ├── Socket.hpp          # Header for Socket class
+|   ├── SignalHandler.hpp   # Header for SignalHandler class 
+|   ├── Location.hpp        # Header for Location class
+|   ├── Exception.hpp       # Contains Exceptions
+|   ├── Global.hpp          # Contains most of headers declarations shared in classes
+│   └── Utils.cpp           # Header for Utils class
 │
-├── include/
-│   ├── server.hpp          # Server header
-│   ├── request.hpp         # Request class header
-│   ├── response.hpp        # Response class header
-│   └── cgi.hpp             # CGI class header
-│
-├── config/
+├── config/                 # folder containing configuration files 
 │   ├── default.conf        # Example configuration file
 │
 ├── Makefile                # Build instructions
